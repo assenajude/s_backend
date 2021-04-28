@@ -1,30 +1,21 @@
 'use strict';
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('associations', {
+    await queryInterface.createTable('associated_members', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      nom: {
+      relation: {
         type: Sequelize.STRING
       },
-      code: {
+      motif: {
         type: Sequelize.STRING
       },
-      description: {
-        type: Sequelize.STRING
-      },
-      avatar: Sequelize.STRING,
-      cotisation: Sequelize.INTEGER,
-      frequence: Sequelize.STRING,
-      status: {
-        type: Sequelize.STRING
-      },
-      fonds: {
-        type: Sequelize.INTEGER
+      messageSent: {
+        type: Sequelize.BOOLEAN
       },
       createdAt: {
         allowNull: false,
@@ -37,6 +28,6 @@ module.exports = {
     });
   },
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('associations');
+    await queryInterface.dropTable('associated_members');
   }
 };

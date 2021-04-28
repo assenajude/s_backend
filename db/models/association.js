@@ -12,13 +12,20 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       association.belongsToMany(models.member, {
-        through: models.associated_members
+        through: models.associated_member
       })
-      association.hasMany(models.engagement)
+      association.hasMany(models.engagement, {
+        foreignKey: 'engagerId',
+        constraints: false,
+        scope: {
+          engagerType: 'association'
+        }
+      })
     }
   };
   association.init({
     nom: DataTypes.STRING,
+    description: DataTypes.STRING,
     code: DataTypes.STRING,
     avatar: DataTypes.STRING,
     cotisation: DataTypes.INTEGER,

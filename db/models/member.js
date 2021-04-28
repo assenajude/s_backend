@@ -15,9 +15,8 @@ module.exports = (sequelize, DataTypes) => {
         through: 'member_roles'
       })
       member.belongsToMany(models.association, {
-        through: models.associated_members
+        through: models.associated_member
       })
-      member.hasMany(models.engagement)
     }
   };
   member.init({
@@ -30,7 +29,8 @@ module.exports = (sequelize, DataTypes) => {
     avatar: DataTypes.STRING,
     pseudo: DataTypes.STRING,
     password: DataTypes.STRING,
-    email: DataTypes.STRING
+    email: DataTypes.STRING,
+    piece: DataTypes.ARRAY(DataTypes.STRING)
   }, {
     sequelize,
     modelName: 'member',

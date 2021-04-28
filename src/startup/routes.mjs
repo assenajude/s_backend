@@ -5,7 +5,7 @@ import memberRoutes from '../routes/member.routes.mjs'
 
 const routes = (app) => {
     app.use('/api/auth', authRoutes)
-    app.use('/api/associations',[verifyToken, isAdmin], associationRoutes)
+    app.use('/api/associations', associationRoutes)
     app.use('/api/members', memberRoutes)
 }
 

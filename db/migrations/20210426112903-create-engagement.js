@@ -14,6 +14,9 @@ module.exports = {
       status: {
         type: Sequelize.STRING
       },
+      engagerType: {
+        type: Sequelize.STRING
+      },
       montant: {
         type: Sequelize.INTEGER
       },
