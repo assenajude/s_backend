@@ -11,12 +11,16 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      cotisation.belongsTo(models.associated_member)
+      cotisation.belongsTo(models.member)
     }
   };
   cotisation.init({
-    montant: DataTypes.INTEGER,
-    motif: DataTypes.STRING
+    montant: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    },
+    motif: DataTypes.STRING,
+    datePayement: DataTypes.DATE,
   }, {
     sequelize,
     modelName: 'cotisation',

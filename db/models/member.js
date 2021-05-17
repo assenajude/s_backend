@@ -11,26 +11,29 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      member.belongsToMany(models.role, {
-        through: 'member_roles'
-      })
-      member.belongsToMany(models.association, {
-        through: models.associated_member
+
+      member.hasMany(models.cotisation)
+      member.hasMany(models.engagement)
+      member.belongsToMany(models.information, {
+        through: models.member_info
       })
     }
   };
   member.init({
-    username: DataTypes.STRING,
-    nom: DataTypes.STRING,
-    prenom: DataTypes.STRING,
-    phone: DataTypes.STRING,
-    adresse: DataTypes.STRING,
-    fonds: DataTypes.INTEGER,
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true
+    },
+    statut: DataTypes.STRING,
+    fonds: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    },
     avatar: DataTypes.STRING,
-    pseudo: DataTypes.STRING,
-    password: DataTypes.STRING,
-    email: DataTypes.STRING,
-    piece: DataTypes.ARRAY(DataTypes.STRING)
+    relation: DataTypes.STRING,
+    adhesionDate: DataTypes.DATE,
+    backImage: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'member',

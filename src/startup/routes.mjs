@@ -2,11 +2,17 @@ import {verifyToken, isAdmin} from '../middlewares/authJWT.mjs'
 import authRoutes from '../routes/auth.routes.mjs'
 import associationRoutes from '../routes/association.routes.mjs'
 import memberRoutes from '../routes/member.routes.mjs'
+import cotisationRoutes from '../routes/cotisation.routes.mjs'
+import engagementRoutes from '../routes/engagement.routes.mjs'
+import informationRoutes from '../routes/information.routes.mjs'
 
 const routes = (app) => {
     app.use('/api/auth', authRoutes)
     app.use('/api/associations', associationRoutes)
     app.use('/api/members', memberRoutes)
+    app.use('/api/cotisations', cotisationRoutes)
+    app.use('/api/engagements', engagementRoutes)
+    app.use('/api/informations', informationRoutes)
 }
 
 export {routes}

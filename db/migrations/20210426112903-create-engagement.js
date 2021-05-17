@@ -11,10 +11,7 @@ module.exports = {
       libelle: {
         type: Sequelize.STRING
       },
-      status: {
-        type: Sequelize.STRING
-      },
-      engagerType: {
+      statut: {
         type: Sequelize.STRING
       },
       montant: {
@@ -22,6 +19,12 @@ module.exports = {
       },
       echeance: {
         type: Sequelize.DATE
+      },
+      progression: {
+        type: Sequelize.INTEGER
+      },
+      accord: {
+        type: Sequelize.BOOLEAN
       },
       createdAt: {
         allowNull: false,

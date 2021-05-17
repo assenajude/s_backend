@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken'
 import db from '../../db/models/index.js'
-const Member = db.member
+const User = db.user
 
 const verifyToken = (req, res, next) => {
     const token = req.headers['x-access-token'];
@@ -8,17 +8,17 @@ const verifyToken = (req, res, next) => {
 
     jwt.verify(token, process.env.JWT_SECRET, (error, decoded) => {
         if(error) return res.status(401).send('vous netes pas autorisé')
-        req.memberId = decoded.id
+        req.userId = decoded.id
         next()
     })
 }
 
 const isAdmin = async (req, res, next) => {
     try {
-        const member = await Member.findByPk(req.memberId)
-        const memberRoles = await member.getRoles()
-        for(let i=0; i< memberRoles.length; i++) {
-            if(memberRoles[i].name === 'admin') {
+        const user = await User.findByPk(req.userId)
+        const userRoles = await user.getRoles()
+        for(let i=0; i< userRoles.length; i++) {
+            if(userRoles[i].name === 'admin') {
                 next()
                 return;
             }

@@ -1,12 +1,15 @@
 import express from 'express'
 const router = express.Router()
-import {checkDuplicateUsernameOrEmail} from '../middlewares/verifySignUp.mjs'
-import {getMemberAssociations, addNewMember, updateMemberState, getAssociationMembers} from '../controllers/member.controller.mjs'
+import {getUserAssociations, addNewMember, updateMemberState,
+    updateMemberData, getAllMembers, getMemberInfos,readInfo, sendMessageToAssociation } from '../controllers/member.controller.mjs'
 
-router.get('/associations',getMemberAssociations)
+router.get('/', getAllMembers)
+router.get('/associations',getUserAssociations)
 router.post('/',addNewMember)
 router.patch('/update', updateMemberState)
-router.post('/all', getAssociationMembers)
-
+router.patch('/updateOne', updateMemberData)
+router.post('/informations', getMemberInfos)
+router.patch('/readInfos',readInfo)
+router.patch('/sendAdhesionMessage', sendMessageToAssociation)
 
 export default router

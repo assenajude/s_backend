@@ -8,19 +8,7 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      nom: {
-        type: Sequelize.STRING
-      },
-      username: {
-        type: Sequelize.STRING
-      },
-      prenom: {
-        type: Sequelize.STRING
-      },
-      phone: {
-        type: Sequelize.STRING
-      },
-      adresse: {
+      statut: {
         type: Sequelize.STRING
       },
       fonds: {
@@ -29,17 +17,14 @@ module.exports = {
       avatar: {
         type: Sequelize.STRING
       },
-      pseudo: {
+      backImage: {
         type: Sequelize.STRING
       },
-      password: {
+      relation: {
         type: Sequelize.STRING
       },
-      email: {
-        type: Sequelize.STRING
-      },
-      piece: {
-        type: Sequelize.ARRAY(Sequelize.STRING)
+      adhesionDate: {
+        type: Sequelize.DATE
       },
       createdAt: {
         allowNull: false,

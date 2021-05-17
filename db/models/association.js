@@ -11,16 +11,11 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      association.belongsToMany(models.member, {
-        through: models.associated_member
+      association.belongsToMany(models.user, {
+        through: models.member
       })
-      association.hasMany(models.engagement, {
-        foreignKey: 'engagerId',
-        constraints: false,
-        scope: {
-          engagerType: 'association'
-        }
-      })
+
+      association.hasMany(models.information)
     }
   };
   association.init({
@@ -28,10 +23,27 @@ module.exports = (sequelize, DataTypes) => {
     description: DataTypes.STRING,
     code: DataTypes.STRING,
     avatar: DataTypes.STRING,
-    cotisation: DataTypes.INTEGER,
-    frequence: DataTypes.STRING,
-    status: DataTypes.STRING,
-    fonds: DataTypes.INTEGER
+    cotisationMensuelle: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    },
+    frequenceCotisation: {
+      type: DataTypes.STRING,
+      defaultValue: 'mensuelle'
+    },
+    statut: {
+      type:DataTypes.STRING,
+      defaultValue: 'standard'
+    },
+    fonds: {
+      type:DataTypes.INTEGER,
+      defaultValue: 0
+    },
+    reglementInterieur: DataTypes.STRING,
+    interetCredit: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    }
   }, {
     sequelize,
     modelName: 'association',

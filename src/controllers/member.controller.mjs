@@ -2,16 +2,28 @@ import decoder from 'jwt-decode'
 import cryptoRandomString from "crypto-random-string";
 import bcrypt from 'bcryptjs'
 import db from '../../db/models/index.js'
+const Op = db.Sequelize.Op
 const Member = db.member
+const User = db.user
+const Informaton = db.information
 const Association = db.association
-const Associated_member = db.associated_member
+const Member_Info = db.member_info
 
-const getMemberAssociations = async (req, res, next) => {
+const getAllMembers = async (req, res, next) => {
+    try {
+        const members = await Member.findAll()
+        return res.status(200).send(members)
+    } catch (e) {
+        next(e.message)
+    }
+}
+
+const getUserAssociations = async (req, res, next) => {
     const authToken = req.headers['x-access-token']
     const connectedUser = decoder(authToken)
     try {
-        const selectedMember = await Member.findByPk(connectedUser.id)
-        const memberAssociations = await selectedMember.getAssociations()
+        const selectedUser = await User.findByPk(connectedUser.id)
+        const memberAssociations = await selectedUser.getAssociations()
         return res.status(200).send(memberAssociations)
     } catch (e) {
         next(e)
@@ -19,36 +31,23 @@ const getMemberAssociations = async (req, res, next) => {
 }
 
 const addNewMember = async (req, res, next) => {
-
     try {
         const generatedPass = cryptoRandomString({length: 5, type: 'alphanumeric'})
         let newMember = await Member.create({
-            nom: req.body.nom,
-            prenom: req.body.prenom,
-            email: req.body.email,
-            phone: req.body.phone,
-            adresse: req.body.adresse,
+            statut: req.body.statut,
             fonds: req.body.fonds,
-            password: bcrypt.hashSync(generatedPass, 8)
+            avatar: req.body.avatar,
+            adhesionDate: req.body.adhesionDate?req.body.adhesionDate:new Date(),
+            backImage: req.body.backImage,
+            relation: 'member'
         })
-        await newMember.setRoles[1]
         const idAssociation = req.body.associationId
-        if(idAssociation) {
-            let selectedAssociation = await Association.findByPk(idAssociation)
-            await selectedAssociation.addMember(newMember, {
-                through: {
-                    relation: 'valid',
-                    motif: 'adhesion',
-                    messageSent: false
-                }
-            })
-        }
-        const newAdded = await Member.findByPk(newMember.id, {
-            attributes: {exclude: ['password']},
-            include: Association
-        })
+        const selectedAssociation = await Association.findByPk(idAssociation)
+        const selectedUser = await User.findByPk(req.body.userId)
+        await newMember.setUser(selectedUser)
+        await newMember.setAssociation(selectedAssociation)
 
-        return res.status(200).send({new: newAdded, randomPass: generatedPass})
+        return res.status(200).send(newMember)
     } catch (e) {
         next(e)
     }
@@ -56,39 +55,96 @@ const addNewMember = async (req, res, next) => {
 
 const updateMemberState = async (req, res, next) => {
     try {
-        let associatedMember = await Associated_member.findOne({
+        let associatedMember = await Member.findOne({
             where: {
                 associationId: req.body.associationId,
-                memberId: req.body.memberId
+                userId: req.body.userId
             }
         })
-        associatedMember.messageSent = false
         associatedMember.relation = req.body.adminResponse
+        associatedMember.adhesionDate = Date.now()
+        associatedMember.statut = req.body.statut?req.body.statut:'ORDINAIRE'
         await associatedMember.save()
-        const newAssociations = await Association.findAll({
-            include: [{model: Member, attributes:{exclude:['password']}}]
-        })
-        return res.status(200).send(newAssociations)
+        const newMember = await Member.findByPk(associatedMember.id)
+        return res.status(200).send(newMember)
     } catch (e) {
-        next(e)
+        next(e.message)
     }
 }
 
-const getAssociationMembers = async (req, res, next) => {
+
+const updateMemberData = async (req, res, next) => {
     try {
-        const selectedAssociation = await Association.findByPk(req.body.associationId)
-        if(!selectedAssociation) return res.status(404).send("aucune association selectionnée")
-        const members = await selectedAssociation.getMembers({attributes: {exclude: ['password']}})
+        let selected = await Member.findByPk(req.body.currentMemberId)
+        if(!selected) return res.status(404).send('member not exist')
+        if(req.body.statut) selected.statut = req.body.statut
+        if(req.body.fonds) selected.fonds += req.body.fonds
+        if(req.body.relation) selected.relation = req.body.relation
+        if(req.body.avatar) selected.avatar = req.body.avatar
+        if(req.body.adhesionDate) selected.adhesionDate = req.body.adhesionDate
+        if(req.body.backImage) selected.backImage = req.body.backImage
+        await selected.save()
+        return res.status(200).send(selected)
+    } catch (e) {
+        next(e.message)
+    }
+}
+
+
+const getMemberInfos = async (req, res, next) => {
+    try {
+        const selectedMember = await Member.findByPk(req.body.memberId)
+        const selectedInfos = await selectedMember.getInformation()
+        return res.status(200).send(selectedInfos)
+    } catch (e) {
+        next(e.message)
+    }
+}
+
+const readInfo = async (req, res, next) => {
+    try {
+        let selectedInfo = await Member_Info.findOne({
+            where: {
+                memberId: req.body.memberId,
+                informationId: req.body.informationId
+            }
+        })
+        selectedInfo.isRead = true
+        await selectedInfo.save()
+        const selectedMember = await Member.findByPk(req.body.memberId)
+        const currentInfos = await selectedMember.getInformation()
+        return res.status(200).send(currentInfos)
+    } catch (e) {
+        next(e.message)
+    }
+}
+
+const sendMessageToAssociation = async (req, res, next) => {
+    try {
+        let selectedAssociation = await Association.findByPk(req.body.associationId)
+        if(!selectedAssociation) return res.status(404).send('association non trouvée')
+        const connectedUser = await User.findByPk(req.body.userId)
+        if(!connectedUser) return res.status(404).send("utilisation non trouvé")
+        await selectedAssociation.addUser(connectedUser, {
+            through: {
+                relation:req.body.relation?req.body.relation : 'onDemand'
+            }
+        })
+
+        const members = await Member.findAll()
         return res.status(200).send(members)
     } catch (e) {
         next(e)
     }
 }
 
-
 export {
-    getMemberAssociations,
+    getAllMembers,
+    getUserAssociations,
     addNewMember,
     updateMemberState,
-    getAssociationMembers
+    updateMemberData,
+    getMemberInfos,
+    readInfo,
+    sendMessageToAssociation
 }

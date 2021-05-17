@@ -1,20 +1,14 @@
 'use strict';
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('associated_members', {
+    await queryInterface.createTable('member_infos', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      relation: {
-        type: Sequelize.STRING
-      },
-      motif: {
-        type: Sequelize.STRING
-      },
-      messageSent: {
+      isRead: {
         type: Sequelize.BOOLEAN
       },
       createdAt: {
@@ -28,6 +22,6 @@ module.exports = {
     });
   },
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('associated_members');
+    await queryInterface.dropTable('member_infos');
   }
 };

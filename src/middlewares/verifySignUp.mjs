@@ -1,22 +1,22 @@
 import db  from '../../db/models/index.js'
 const ROLES = db.ROLES
-const Member = db.member
+const User = db.user
 
 const checkDuplicateUsernameOrEmail = async (req, res, next) => {
     try {
-        const memberByUsername = await Member.findOne({
+        const userByUsername = await User.findOne({
             where: {
                 username: req.body.username
             }
         })
-        if(memberByUsername) return res.status(400).send('Echec! ce nom utilisateur est deja pris.')
+        if(userByUsername) return res.status(400).send('Echec! ce nom utilisateur est deja pris.')
 
-        const memberByEmail = await Member.findOne({
+        const userByEmail = await User.findOne({
             where: {
                 email: req.body.email
             }
         })
-        if(memberByEmail) return res.status(400).send('Echec! email deja pris')
+        if(userByEmail) return res.status(400).send('Echec! email deja pris')
 
         next()
     } catch (e) {
