@@ -35,8 +35,12 @@ module.exports = (sequelize, DataTypes) => {
       type:DataTypes.STRING,
       defaultValue: 'standard'
     },
-    fonds: {
+    fondInitial: {
       type:DataTypes.INTEGER,
+      defaultValue: 0
+    },
+    seuilSecurite: {
+      type: DataTypes.INTEGER,
       defaultValue: 0
     },
     reglementInterieur: DataTypes.STRING,

@@ -23,9 +23,10 @@ module.exports = {
       statut: {
         type: Sequelize.STRING
       },
-      fonds: {
+      fondInitial: {
         type: Sequelize.INTEGER
       },
+      seuilSecurite: Sequelize.INTEGER,
       reglementInterieur: {
         type: Sequelize.STRING
       },

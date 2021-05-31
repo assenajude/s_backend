@@ -29,8 +29,14 @@ module.exports = {
       adresse: {
         type: Sequelize.STRING
       },
+      avatar: {
+        type: Sequelize.STRING
+      },
       piece: {
         type: Sequelize.ARRAY(Sequelize.STRING)
+      },
+      wallet: {
+        type: Sequelize.INTEGER,
       },
       createdAt: {
         allowNull: false,

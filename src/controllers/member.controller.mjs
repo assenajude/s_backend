@@ -53,7 +53,7 @@ const addNewMember = async (req, res, next) => {
     }
 }
 
-const updateMemberState = async (req, res, next) => {
+const respondToAdhesionMessage = async (req, res, next) => {
     try {
         let associatedMember = await Member.findOne({
             where: {
@@ -66,7 +66,7 @@ const updateMemberState = async (req, res, next) => {
         associatedMember.statut = req.body.statut?req.body.statut:'ORDINAIRE'
         await associatedMember.save()
         const newMember = await Member.findByPk(associatedMember.id)
-        return res.status(200).send(newMember)
+        return res.status(200).send(associatedMember)
     } catch (e) {
         next(e.message)
     }
@@ -138,13 +138,28 @@ const sendMessageToAssociation = async (req, res, next) => {
     }
 }
 
+const editImages = async(req, res, next) => {
+    try {
+        let selectedMember = await Member.findByPk(req.body.memberId)
+        if(!selectedMember) return res.status(200).send("membre non trouvé")
+        selectedMember.avatar = req.body.avatarUrl
+        selectedMember.backImage = req.body.backImageUrl
+        await selectedMember.save()
+        const justUpdated = await Member.findByPk(selectedMember.id)
+        return res.status(200).send(justUpdated)
+    } catch (e) {
+        next(e.message)
+    }
+}
+
 export {
     getAllMembers,
     getUserAssociations,
     addNewMember,
-    updateMemberState,
+    respondToAdhesionMessage,
     updateMemberData,
     getMemberInfos,
     readInfo,
-    sendMessageToAssociation
+    sendMessageToAssociation,
+    editImages
 }

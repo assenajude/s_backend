@@ -8,6 +8,9 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
+      solde: {
+        type: Sequelize.INTEGER,
+      },
       libelle: {
         type: Sequelize.STRING
       },
@@ -17,14 +20,20 @@ module.exports = {
       montant: {
         type: Sequelize.INTEGER
       },
+      interetMontant: {
+        type: Sequelize.INTEGER,
+      },
       echeance: {
         type: Sequelize.DATE
       },
       progression: {
-        type: Sequelize.INTEGER
+        type: Sequelize.FLOAT,
       },
       accord: {
         type: Sequelize.BOOLEAN
+      },
+      typeEngagement: {
+        type: Sequelize.STRING
       },
       createdAt: {
         allowNull: false,

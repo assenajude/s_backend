@@ -14,6 +14,9 @@ module.exports = (sequelize, DataTypes) => {
       role.belongsToMany(models.user, {
         through: 'user_roles'
       })
+      role.belongsToMany(models.member, {
+        through: 'member_roles'
+      })
     }
   };
   role.init({

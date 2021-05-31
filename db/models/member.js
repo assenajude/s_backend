@@ -13,9 +13,21 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
 
       member.hasMany(models.cotisation)
-      member.hasMany(models.engagement)
+      member.hasMany(models.engagement, {
+        as: 'Creator',
+        foreignKey: 'creatorId'
+      })
+      member.belongsToMany(models.engagement, {
+        as: 'Votor',
+        through: models.vote,
+        foreignKey: 'votorId',
+        otherKey: 'engagementId'
+      })
       member.belongsToMany(models.information, {
         through: models.member_info
+      })
+      member.belongsToMany(models.role, {
+        through: 'member_roles'
       })
     }
   };

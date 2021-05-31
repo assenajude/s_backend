@@ -70,10 +70,13 @@ const signin = async (req, res, next) => {
         for(let i=0; i<memberRoles.length; i++) {
             authorities.push("ROLE_" + memberRoles[i].name.toUpperCase())
         }
+        const selectedUser = await User.findByPk(currentUser.id, {
+            attributes: {exclude: ['password']}
+        })
+
+        const data = selectedUser.dataValues
         return res.status(201).send({
-            id: currentUser.id,
-            username: currentUser.username,
-            email: currentUser.email,
+           user: data,
             roles: authorities,
             accessToken: token
         })
