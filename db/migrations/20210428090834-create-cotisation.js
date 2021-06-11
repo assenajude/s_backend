@@ -8,13 +8,19 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
+      typeCotisation: {
+        type: Sequelize.STRING,
+      },
       montant: {
         type: Sequelize.INTEGER
       },
       motif: {
         type: Sequelize.STRING
       },
-      datePayement: {
+      dateDebut: {
+        type: Sequelize.DATE
+      },
+      dateFin: {
         type: Sequelize.DATE
       },
       createdAt: {

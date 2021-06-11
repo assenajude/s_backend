@@ -165,17 +165,24 @@ const voteEngagement = async (req, res, next) => {
                 selectedAssociation.fondInitial -= engagement.montant
                 engagement.statut = 'paying'
                 selectedUser.wallet += engagement.montant
+                selectedMember.fonds -= engagement.montant
             }
+
+        }
             await selectedAssociation.save({transaction})
             await engagement.save({transaction})
             await selectedUser.save({transaction})
-        }
+            await selectedMember.save({transaction})
+            await transaction.commit()
+
+        const justVoted = await Engagement.findByPk(engagement.id,{
+            include: [{model: Member, as: 'Creator'}, Tranche]
+        })
 
         const data = {
-            id: engagement.id,
+            engagement: justVoted,
             engagements: engagementVotes
         }
-        await transaction.commit()
         return res.status(200).send(data)
     } catch (e) {
         await transaction.rollback()
@@ -234,22 +241,39 @@ const payTranche = async(req, res, next) => {
         selectedEngagement.solde += montantToPay
         const currentProgress = montantToPay/totalMontant
         const convertProgress = currentProgress.toFixed(1)
-        let currentProgression = 0
-        currentProgression = Number(selectedEngagement.progression) + Number(convertProgress)
-        selectedEngagement.progression += currentProgression
+        selectedEngagement.progression += Number(convertProgress)
+        let memberFundToAdded = montantToPay
         if(selectedEngagement.solde === totalMontant) {
             selectedEngagement.progression = 1
            selectedEngagement.statut = 'ended'
+            memberFundToAdded = montantToPay - selectedEngagement.interetMontant
         }
+        let selectedMember = await Member.findByPk(selectedEngagement.creatorId)
+        selectedMember.fonds += memberFundToAdded
+        let selectedAssociation = await Association.findByPk(selectedMember.associationId)
+        selectedAssociation.fondInitial += montantToPay
         await selectedEngagement.save()
         await selectedTranche.save()
         await selectedUser.save()
+        await selectedMember.save()
+        await selectedAssociation.save()
         return res.status(200).send(selectedTranche)
     } catch (e) {
         next(e.message)
     }
 }
 
+const getSelectedEngagement = async (req, res, next) => {
+    try {
+        const selectedEngagement = await Engagement.findByPk(req.body.engagementId, {
+            include: [{model: Member, as: 'Creator'}, Tranche]
+        })
+        if(!selectedEngagement)return res.status(200).send("engagement non trouvé.")
+        return res.status(200).send(selectedEngagement)
+    } catch (e) {
+        next(e.message)
+    }
+}
 export {
     addEngagement,
     getEngagementsByAssociation,
@@ -257,5 +281,6 @@ export {
     updateEngagement,
     voteEngagement,
     getEngagementVotes,
-    payTranche
+    payTranche,
+    getSelectedEngagement
 }

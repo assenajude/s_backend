@@ -1,13 +1,16 @@
 import express from "express"
+import {verifyToken, isAdmin, isAdminOrModerator} from '../middlewares/authJWT.mjs'
 import {createAssociation, getAllAssociations,getAssociationMembers, editMemberRoles,
-    getconnectedMemberRoles, updateAvatar} from '../controllers/association.controller.mjs'
+    getconnectedMemberRoles, updateAvatar, getSelectedAssociation, getConnectedMember} from '../controllers/association.controller.mjs'
 const router = express.Router()
 
-router.post('/',createAssociation)
+router.post('/', [verifyToken, isAdmin],createAssociation)
 router.get('/',getAllAssociations)
-router.post('/members', getAssociationMembers)
-router.patch('/editRoles', editMemberRoles)
-router.post('/members/roles', getconnectedMemberRoles)
-router.patch('/updateAvatar', updateAvatar)
+router.post('/members',verifyToken, getAssociationMembers)
+router.patch('/editRoles',[verifyToken, isAdmin], editMemberRoles)
+router.post('/members/roles',verifyToken, getconnectedMemberRoles)
+router.patch('/updateAvatar',[verifyToken, isAdminOrModerator], updateAvatar)
+router.post('/selectedAssociation',verifyToken, getSelectedAssociation)
+router.post('/connectedMember',verifyToken, getConnectedMember)
 
 export default router

@@ -1,13 +1,12 @@
 import decoder from 'jwt-decode'
 import cryptoRandomString from "crypto-random-string";
-import bcrypt from 'bcryptjs'
 import db from '../../db/models/index.js'
-const Op = db.Sequelize.Op
 const Member = db.member
 const User = db.user
-const Informaton = db.information
 const Association = db.association
+const Cotisation = db.cotisation
 const Member_Info = db.member_info
+const Member_Cotisation = db.member_cotisation
 
 const getAllMembers = async (req, res, next) => {
     try {
@@ -65,7 +64,6 @@ const respondToAdhesionMessage = async (req, res, next) => {
         associatedMember.adhesionDate = Date.now()
         associatedMember.statut = req.body.statut?req.body.statut:'ORDINAIRE'
         await associatedMember.save()
-        const newMember = await Member.findByPk(associatedMember.id)
         return res.status(200).send(associatedMember)
     } catch (e) {
         next(e.message)
@@ -152,6 +150,70 @@ const editImages = async(req, res, next) => {
     }
 }
 
+const payCotisation = async (req, res, next) => {
+    const montantToPay = Number(req.body.montant)
+    try {
+        let selectedMember = await Member.findByPk(req.body.memberId)
+        if(!selectedMember) return res.status(404).send("Membre non trouvée")
+        let selectedUser = await User.findByPk(selectedMember.userId)
+        if(!selectedUser) return res.status(404).send("L'utilisateur n'existe pas")
+        if(selectedUser.wallet<montantToPay) return res.status(403).send("Fonds insuffisant")
+        let selectedCotisation = await Cotisation.findByPk(req.body.cotisationId)
+        if(!selectedCotisation) return res.status(404).send("cette cotisation nexiste pas")
+        let selectedAssociation = await Association.findByPk(selectedCotisation.associationId)
+        if(!selectedAssociation) return res.status(404).send("association non trouvée")
+        await selectedMember.addCotisation(selectedCotisation, {
+            through: {
+                montant: montantToPay,
+                paymentDate: new Date()
+            }
+        })
+        let newPayed = await Member_Cotisation.findOne({
+            where: {
+                memberId: selectedMember.id,
+                cotisationId: selectedCotisation.id
+            }
+        })
+        if(montantToPay >= selectedCotisation.montant) {
+            newPayed.isPayed = true
+        }
+        if(selectedCotisation.typeCotisation.toLowerCase() === 'mensuel') {
+            selectedMember.fonds += montantToPay
+        }
+        selectedAssociation.fondInitial += montantToPay
+        selectedUser.wallet -= montantToPay
+
+        await newPayed.save()
+        await selectedMember.save()
+        await selectedUser.save()
+        await selectedAssociation.save()
+        const memberCotisState = await selectedMember.getCotisations()
+        return res.status(200).send({memberId: selectedMember.id, cotisations: memberCotisState})
+    } catch (e) {
+        next(e.message)
+    }
+}
+
+const getMembersCotisations = async (req, res, next) => {
+    try {
+        const allMembers = await Member.findAll({
+            where: {
+                associationId: req.body.associationId
+            }
+        })
+        let membersCotisation =  {}
+        for(let i=0; i<allMembers.length; i++) {
+            const selectedMember = allMembers[i]
+            const memberId = selectedMember.id
+            const selectedMemberCotisations = await selectedMember.getCotisations()
+            membersCotisation[memberId] = selectedMemberCotisations
+        }
+        return res.status(200).send(membersCotisation)
+    } catch (e) {
+        next(e.message)
+    }
+}
+
 export {
     getAllMembers,
     getUserAssociations,
@@ -161,5 +223,7 @@ export {
     getMemberInfos,
     readInfo,
     sendMessageToAssociation,
-    editImages
+    editImages,
+    payCotisation,
+    getMembersCotisations
 }

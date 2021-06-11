@@ -7,6 +7,7 @@ import engagementRoutes from '../routes/engagement.routes.mjs'
 import informationRoutes from '../routes/information.routes.mjs'
 import userRoutes from '../routes/user.routes.mjs'
 import uploadImageRoutes from '../routes/uploadImage.route.mjs'
+import transactionRoutes from '../routes/transaction.routes.mjs'
 
 const routes = (app) => {
     app.use('/api/auth', authRoutes)
@@ -17,6 +18,7 @@ const routes = (app) => {
     app.use('/api/engagements', engagementRoutes)
     app.use('/api/informations', informationRoutes)
     app.use('/api/uploadFile', uploadImageRoutes)
+    app.use('/api/transactions', transactionRoutes)
 }
 
 export {routes}

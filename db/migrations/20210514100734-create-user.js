@@ -35,6 +35,12 @@ module.exports = {
       piece: {
         type: Sequelize.ARRAY(Sequelize.STRING)
       },
+      profession: {
+        type: Sequelize.STRING
+      },
+      emploi: {
+        type: Sequelize.STRING
+      },
       wallet: {
         type: Sequelize.INTEGER,
       },

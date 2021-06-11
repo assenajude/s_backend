@@ -11,7 +11,10 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      cotisation.belongsTo(models.member)
+      cotisation.belongsTo(models.association)
+      cotisation.belongsToMany(models.member, {
+        through: models.member_cotisation
+      })
     }
   };
   cotisation.init({
@@ -20,7 +23,12 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 0
     },
     motif: DataTypes.STRING,
-    datePayement: DataTypes.DATE,
+    typeCotisation: {
+      type: DataTypes.STRING,
+      defaultValue: 'mensuel'
+    },
+    dateDebut: DataTypes.DATE,
+    dateFin: DataTypes.DATE,
   }, {
     sequelize,
     modelName: 'cotisation',

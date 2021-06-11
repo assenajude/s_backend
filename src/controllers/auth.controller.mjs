@@ -61,9 +61,6 @@ const signin = async (req, res, next) => {
                 message: 'invalid password'
             })
         }
-        let token = jwt.sign({id: currentUser.id}, process.env.JWT_SECRET, {
-            expiresIn: 86400
-        })
 
         let authorities = []
         const memberRoles = await currentUser.getRoles()
@@ -72,6 +69,10 @@ const signin = async (req, res, next) => {
         }
         const selectedUser = await User.findByPk(currentUser.id, {
             attributes: {exclude: ['password']}
+        })
+
+        let token = jwt.sign({id: currentUser.id, username: selectedUser.username, email: selectedUser.email, roles: authorities}, process.env.JWT_SECRET, {
+            expiresIn: 86400
         })
 
         const data = selectedUser.dataValues

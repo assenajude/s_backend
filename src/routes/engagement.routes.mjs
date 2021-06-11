@@ -1,15 +1,17 @@
 import express from 'express'
+import {verifyToken, isAdminOrModerator} from '../middlewares/authJWT.mjs'
 const router = express.Router()
 import {addEngagement, getEngagementsByAssociation, validEngagement, updateEngagement, voteEngagement,
-    getEngagementVotes, payTranche} from '../controllers/engagement.controller.mjs'
+    getEngagementVotes, payTranche, getSelectedEngagement} from '../controllers/engagement.controller.mjs'
 
-router.post('/', addEngagement)
-router.post('/byAssociation', getEngagementsByAssociation)
-router.patch('/validation', validEngagement)
-router.patch('/update', updateEngagement)
-router.patch('/vote', voteEngagement)
-router.post('/allVotes', getEngagementVotes)
-router.patch('/payTranche', payTranche)
+router.post('/',verifyToken, addEngagement)
+router.post('/byAssociation', verifyToken, getEngagementsByAssociation)
+router.patch('/validation',[verifyToken, isAdminOrModerator], validEngagement)
+router.patch('/update',verifyToken, updateEngagement)
+router.patch('/vote',verifyToken, voteEngagement)
+router.post('/allVotes',verifyToken, getEngagementVotes)
+router.patch('/payTranche',verifyToken, payTranche)
+router.post('/getById',verifyToken, getSelectedEngagement)
 
 
 

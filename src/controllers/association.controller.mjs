@@ -41,8 +41,31 @@ const getAllAssociations = async (req, res, next) => {
     }
 }
 
+const getSelectedAssociation = async (req, res, next) => {
+    try {
+        const selectedAssociation = await Association.findByPk(req.body.associationId)
+        if(!selectedAssociation)return res.status(404).send({message: "Association non trouvée."})
+        return res.status(200).send(selectedAssociation)
+    } catch (e) {
+        next(e.message)
+    }
+}
 
 
+const getConnectedMember = async (req, res, next) => {
+    try {
+        const selectedAssociation = await Association.findByPk(req.body.associationId)
+        if(!selectedAssociation) return res.status(404).send("L'association n'existe pas")
+        const members =await selectedAssociation.getUsers({
+            attributes: {exclude:['password']}
+        })
+        const selectedMember = members.find(member => member.id === req.body.memberId)
+        if(!selectedMember) return res.status(404).send("Membre non trouvé.")
+        return res.status(200).send(selectedMember)
+    } catch (e) {
+        next(e.message)
+    }
+}
 
 const getAssociationMembers = async (req, res, next) => {
     try {
@@ -121,5 +144,7 @@ export {
     getAssociationMembers,
     editMemberRoles,
     getconnectedMemberRoles,
-    updateAvatar
+    updateAvatar,
+    getSelectedAssociation,
+    getConnectedMember
 }

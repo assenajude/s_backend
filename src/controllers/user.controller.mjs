@@ -1,4 +1,6 @@
 import db from '../../db/models/index.js'
+import {isAdminUser} from '../utilities/adminRoles.mjs'
+import decoder from 'jwt-decode'
 const User = db.user
 
 const editUserInfo = async (req, res, next) => {
@@ -11,6 +13,8 @@ const editUserInfo = async (req, res, next) => {
         if(req.body.phone) selectedUer.phone = req.body.phone
         if(req.body.email) selectedUer.email = req.body.email
         if(req.body.adresse) selectedUer.adresse = req.body.adresse
+        if(req.body.profession) selectedUer.profession = req.body.profession
+        if(req.body.emploi) selectedUer.emploi = req.body.emploi
         await selectedUer.save()
         const justUpdated = await User.findByPk(selectedUer.id, {
             attributes: {exclude: ['password']}
@@ -53,8 +57,25 @@ const updateImages = async (req, res, next) => {
     }
 }
 
+const getAllUser = async (req, res, next) => {
+    const token = req.headers['x-access-token']
+     const isAdmin = isAdminUser(token)
+    try {
+        let allUser = []
+        if(isAdmin) {
+        allUser = await User.findAll({
+            attributes: {exclude: ['password']}
+        })
+        }
+        return res.status(200).send(allUser)
+    } catch (e) {
+        next(e.message)
+    }
+}
+
 export {
     editUserInfo,
     editFund,
-    updateImages
+    updateImages,
+    getAllUser
 }

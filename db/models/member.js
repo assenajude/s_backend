@@ -12,7 +12,9 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
 
-      member.hasMany(models.cotisation)
+      member.belongsToMany(models.cotisation, {
+        through: models.member_cotisation
+      })
       member.hasMany(models.engagement, {
         as: 'Creator',
         foreignKey: 'creatorId'

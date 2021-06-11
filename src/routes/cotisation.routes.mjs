@@ -1,8 +1,9 @@
 import express from 'express'
 const router = express.Router()
+import {verifyToken, isAdminOrModerator} from '../middlewares/authJWT.mjs'
 import {addCotisation, getAssociationCotisations} from '../controllers/cotisation.controller.mjs'
 
-router.post('/', addCotisation)
-router.post('/all', getAssociationCotisations)
+router.post('/',[verifyToken, isAdminOrModerator], addCotisation)
+router.post('/all',verifyToken, getAssociationCotisations)
 
 export default router

@@ -14,6 +14,7 @@ module.exports = (sequelize, DataTypes) => {
       association.belongsToMany(models.user, {
         through: models.member
       })
+      association.hasMany(models.cotisation)
 
       association.hasMany(models.information)
     }
