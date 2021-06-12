@@ -1,8 +1,5 @@
 import dotenv from 'dotenv'
 dotenv.config()
-import {createRequire} from 'module'
-// const require = createRequire()
-
 import bodyParser from 'body-parser'
 import cors from 'cors'
 import express from 'express'
