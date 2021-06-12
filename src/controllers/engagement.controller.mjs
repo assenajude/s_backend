@@ -16,26 +16,26 @@ const addEngagement = async (req, res, next) => {
         echeance: req.body.echeance?req.body.echeance: new Date(),
         statut:req.body.status?req.body.status : 'voting'
     }
+    const transaction =await db.sequelize.transaction()
     try {
-        const selectedMember = await Member.findByPk(req.body.memberId)
-        const selectedAssociation = await Association.findByPk(req.body.associationId)
+        const selectedMember = await Member.findByPk(req.body.memberId, {transaction})
+        const selectedAssociation = await Association.findByPk(req.body.associationId, {transaction})
         if(!selectedAssociation) return res.status(404).send({message: 'association non trouvé'})
         if(!selectedMember)return res.status(404).send({message: 'utilisateur nom trouvé'})
-        let newAdded = await Engagement.create(data)
-        await newAdded.setCreator(selectedMember)
+        let newAdded = await Engagement.create(data, {transaction})
+        await newAdded.setCreator(selectedMember, {transaction})
         const currentMontant = Number(req.body.montant)
         const interet = selectedAssociation.interetCredit / 100
         const interetValue = interet * currentMontant
         newAdded.montant = currentMontant
         newAdded.interetMontant = interetValue
-        await newAdded.save()
+        await newAdded.save({transaction})
         const totalMontant = currentMontant + interetValue
         if(req.body.typeEngagement.toLowerCase() === 'remboursable') {
             const today = dayjs()
             const ended = dayjs(req.body.echeance)
             let diff = ended.diff(today, 'hours')
             const days = Math.floor(diff / 24)
-            // diff = diff-(days*24)
             let trancheMontant = 0
             const result = days/30
             let nbTranche = Math.trunc(result)
@@ -53,10 +53,10 @@ const addEngagement = async (req, res, next) => {
                         echeance:newEcheance
                     };
                     (async function(tranche) {
-                        let addedTranche = await newAdded.createTranche(tranche)
+                        let addedTranche = await newAdded.createTranche(tranche, {transaction})
                         if(i===0) {
                             addedTranche.montant += reste
-                            await addedTranche.save()
+                            await addedTranche.save({transaction})
                         }
 
                     })(newTranche)
@@ -68,15 +68,17 @@ const addEngagement = async (req, res, next) => {
                     solde: 0,
                     montant: trancheMontant,
                     echeance: req.body.echeance
-                })
+                }, {transaction})
             }
 
         }
+        await transaction.commit()
         const justAdded = await Engagement.findByPk(newAdded.id, {
             include: [{model: Member, as: 'Creator'}]
         })
         return res.status(200).send(justAdded)
     } catch (e) {
+        await transaction.rollback()
         next(e.message)
     }
 }
@@ -224,16 +226,17 @@ const getEngagementVotes = async (req, res, next) => {
 
 const payTranche = async(req, res, next) => {
     const montantToPay = Number(req.body.montant)
+    const transaction =await db.sequelize.transaction()
     try {
-        let selectedTranche = await Tranche.findByPk(req.body.id)
+        let selectedTranche = await Tranche.findByPk(req.body.id, {transaction})
         if(!selectedTranche) return res.status(404).send({message: "tranche non trouvée"})
         await selectedTranche.createPayement({
             montant: montantToPay,
             libelle: `Payement sur tranche`
-        })
+        }, {transaction})
         selectedTranche.solde += montantToPay
-        let selectedEngagement = await Engagement.findByPk(req.body.engagementId)
-        let selectedUser = await User.findByPk(req.body.userId)
+        let selectedEngagement = await Engagement.findByPk(req.body.engagementId, {transaction})
+        let selectedUser = await User.findByPk(req.body.userId, {transaction})
         if(!selectedUser) return res.status(404).send("Utilisateur non trouvé")
         if(selectedUser.wallet<montantToPay) return res.status(400).send("Fonds insuffisant")
         selectedUser.wallet -= montantToPay
@@ -248,15 +251,15 @@ const payTranche = async(req, res, next) => {
            selectedEngagement.statut = 'ended'
             memberFundToAdded = montantToPay - selectedEngagement.interetMontant
         }
-        let selectedMember = await Member.findByPk(selectedEngagement.creatorId)
+        let selectedMember = await Member.findByPk(selectedEngagement.creatorId, {transaction})
         selectedMember.fonds += memberFundToAdded
-        let selectedAssociation = await Association.findByPk(selectedMember.associationId)
+        let selectedAssociation = await Association.findByPk(selectedMember.associationId, {transaction})
         selectedAssociation.fondInitial += montantToPay
-        await selectedEngagement.save()
-        await selectedTranche.save()
-        await selectedUser.save()
-        await selectedMember.save()
-        await selectedAssociation.save()
+        await selectedEngagement.save({transaction})
+        await selectedTranche.save({transaction})
+        await selectedUser.save({transaction})
+        await selectedMember.save({transaction})
+        await selectedAssociation.save({transaction})
         return res.status(200).send(selectedTranche)
     } catch (e) {
         next(e.message)

@@ -1,4 +1,3 @@
-import {verifyToken, isAdmin} from '../middlewares/authJWT.mjs'
 import authRoutes from '../routes/auth.routes.mjs'
 import associationRoutes from '../routes/association.routes.mjs'
 import memberRoutes from '../routes/member.routes.mjs'

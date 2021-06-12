@@ -1,5 +1,4 @@
 import db from '../../db/models/index.js'
-const Op = db.Sequelize.Op
 const Member = db.member
 const Association = db.association
 const Information = db.information

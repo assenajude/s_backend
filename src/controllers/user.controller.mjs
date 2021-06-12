@@ -1,6 +1,5 @@
 import db from '../../db/models/index.js'
 import {isAdminUser} from '../utilities/adminRoles.mjs'
-import decoder from 'jwt-decode'
 const User = db.user
 
 const editUserInfo = async (req, res, next) => {

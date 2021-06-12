@@ -1,5 +1,4 @@
 import decoder from 'jwt-decode'
-import cryptoRandomString from "crypto-random-string";
 import db from '../../db/models/index.js'
 const Member = db.member
 const User = db.user
@@ -31,7 +30,6 @@ const getUserAssociations = async (req, res, next) => {
 
 const addNewMember = async (req, res, next) => {
     try {
-        const generatedPass = cryptoRandomString({length: 5, type: 'alphanumeric'})
         let newMember = await Member.create({
             statut: req.body.statut,
             fonds: req.body.fonds,
@@ -152,27 +150,30 @@ const editImages = async(req, res, next) => {
 
 const payCotisation = async (req, res, next) => {
     const montantToPay = Number(req.body.montant)
+        const transaction = await db.sequelize.transaction()
     try {
-        let selectedMember = await Member.findByPk(req.body.memberId)
+        let selectedMember = await Member.findByPk(req.body.memberId, {transaction})
         if(!selectedMember) return res.status(404).send("Membre non trouvée")
-        let selectedUser = await User.findByPk(selectedMember.userId)
+        let selectedUser = await User.findByPk(selectedMember.userId, {transaction})
         if(!selectedUser) return res.status(404).send("L'utilisateur n'existe pas")
         if(selectedUser.wallet<montantToPay) return res.status(403).send("Fonds insuffisant")
-        let selectedCotisation = await Cotisation.findByPk(req.body.cotisationId)
+        let selectedCotisation = await Cotisation.findByPk(req.body.cotisationId, {transaction})
         if(!selectedCotisation) return res.status(404).send("cette cotisation nexiste pas")
-        let selectedAssociation = await Association.findByPk(selectedCotisation.associationId)
+        let selectedAssociation = await Association.findByPk(selectedCotisation.associationId, {transaction})
         if(!selectedAssociation) return res.status(404).send("association non trouvée")
         await selectedMember.addCotisation(selectedCotisation, {
             through: {
                 montant: montantToPay,
                 paymentDate: new Date()
-            }
+            },
+            transaction
         })
         let newPayed = await Member_Cotisation.findOne({
             where: {
                 memberId: selectedMember.id,
                 cotisationId: selectedCotisation.id
-            }
+            },
+            transaction
         })
         if(montantToPay >= selectedCotisation.montant) {
             newPayed.isPayed = true
@@ -183,13 +184,15 @@ const payCotisation = async (req, res, next) => {
         selectedAssociation.fondInitial += montantToPay
         selectedUser.wallet -= montantToPay
 
-        await newPayed.save()
-        await selectedMember.save()
-        await selectedUser.save()
-        await selectedAssociation.save()
-        const memberCotisState = await selectedMember.getCotisations()
+        await newPayed.save({transaction})
+        await selectedMember.save({transaction})
+        await selectedUser.save({transaction})
+        await selectedAssociation.save({transaction})
+        const memberCotisState = await selectedMember.getCotisations({transaction})
+        await transaction.commit()
         return res.status(200).send({memberId: selectedMember.id, cotisations: memberCotisState})
     } catch (e) {
+        await transaction.rollback()
         next(e.message)
     }
 }

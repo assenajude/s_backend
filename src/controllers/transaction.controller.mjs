@@ -13,19 +13,22 @@ const addTransaction = async (req, res, next) => {
         numero: req.body.numero,
         statut: req.body.statut?req.body.statut : 'processing'
     }
+    const transaction =await db.sequelize.transaction()
     try {
-        const selectedUser = await User.findByPk(req.body.userId)
+        const selectedUser = await User.findByPk(req.body.userId, {transaction})
         if(!selectedUser) return res.status(404).send("Utilisateur non trouvé")
-        let newTransaction = await Transaction.create(data)
+        let newTransaction = await Transaction.create(data, {transaction})
         const transactionNumber = genCode({length: 8, type: 'numeric'})
         newTransaction.number = `T-${transactionNumber}`
         newTransaction.setUser(selectedUser)
-        await newTransaction.save()
+        await newTransaction.save({transaction})
+        await transaction.commit()
         const justAdded = await Transaction.findByPk(newTransaction.id, {
             include: [{model:User, attributes: {exclude: ['password']}}]
         })
         return res.status(200).send(justAdded)
     } catch (e) {
+        await transaction.rollback()
         next(e.message)
     }
 }
@@ -33,8 +36,9 @@ const addTransaction = async (req, res, next) => {
 
 const updateTransaction = async (req, res, next) => {
     const montant = Number(req.body.montant)
+    const transaction =await db.sequelize.transaction()
     try {
-        let selectedTransaction = await Transaction.findByPk(req.body.transactionId)
+        let selectedTransaction = await Transaction.findByPk(req.body.transactionId, {transaction})
         if(!selectedTransaction) return res.status(200).send("transaction non trouvée")
         if(req.body.typeTransac) selectedTransaction.typeTransac = req.body.typeTransac
         if(req.body.libelle) selectedTransaction.libelle = req.body.libelle
@@ -43,7 +47,7 @@ const updateTransaction = async (req, res, next) => {
         if(req.body.statut) {
             selectedTransaction.statut = req.body.statut
             if(req.body.statut.toLowerCase() === 'succeed') {
-                let selectedUser = await User.findByPk(req.body.userId)
+                let selectedUser = await User.findByPk(req.body.userId, {transaction})
                     if(!selectedUser) return res.status(404).send({message: "Utilisateur non trouvé"})
                 if(req.body.typeTransac.toLowerCase() === 'depot') {
                     selectedUser.wallet += montant
@@ -53,15 +57,17 @@ const updateTransaction = async (req, res, next) => {
                     }
                     selectedUser.wallet -= montant
                 }
-                await selectedUser.save()
+                await selectedUser.save({transaction})
             }
         }
-        await selectedTransaction.save()
+        await selectedTransaction.save({transaction})
+        await transaction.commit()
         const justUpdated = await Transaction.findByPk(selectedTransaction.id, {
             include: [{model: User, attributes: {exclude: ['password']}}]
         })
         return res.status(200).send(justUpdated)
     } catch (e) {
+        await transaction.rollback()
         next(e.message)
     }
 }

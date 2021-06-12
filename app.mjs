@@ -1,10 +1,19 @@
 import dotenv from 'dotenv'
 dotenv.config()
+import logger from "./src/utilities/logger.mjs";
 import bodyParser from 'body-parser'
 import cors from 'cors'
 import express from 'express'
+import prod from './src/startup/prod.mjs'
 
 const app = express();
+
+logger.log()
+
+if(!process.env.JWT_SECRET) {
+    throw new Error('FATAL ERROR, la clef privée jwt nexiste pas')
+    process.exit(1)
+}
 
 
 const corsOption = {
@@ -26,12 +35,13 @@ app.use((req, res, next)=> {
 
 import db from './db/models/index.js'
 db.sequelize.sync().then(() => {
-    console.log('the app has been successfully connected to the database');
+    logger.log('the app has been successfully connected to the database');
 }).catch(error => {
-    console.error(error.message)});
+    logger.log(error.message)});
 import {routes} from './src/startup/routes.mjs'
 routes(app)
 import {errorHandler} from './src/middlewares/error.handler.mjs'
 app.use(errorHandler)
+prod(app)
 
 export {app}
