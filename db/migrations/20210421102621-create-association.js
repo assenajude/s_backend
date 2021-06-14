@@ -17,6 +17,9 @@ module.exports = {
       description: {
         type: Sequelize.STRING
       },
+      validationLenght: {
+        type: Sequelize.INTEGER,
+      },
       avatar: Sequelize.STRING,
       cotisationMensuelle: Sequelize.INTEGER,
       frequenceCotisation: Sequelize.STRING,

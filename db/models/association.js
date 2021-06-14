@@ -48,6 +48,10 @@ module.exports = (sequelize, DataTypes) => {
     interetCredit: {
       type: DataTypes.INTEGER,
       defaultValue: 0
+    },
+    validationLenght: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
     }
   }, {
     sequelize,

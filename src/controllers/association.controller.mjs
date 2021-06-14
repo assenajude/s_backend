@@ -17,14 +17,33 @@ const createAssociation = async (req, res, next) => {
         fondInitial: req.body.fondInitial,
         seuilSecurite: req.body.seuilSecurite,
         statut:req.body.statut?req.body.statut:'standard',
-        interetCredit: req.body.interetCredit
+        interetCredit: req.body.interetCredit,
+        validationLenght: req.body.validatorsNumber
     }
     try {
-        let newAssociation = await Association.create(data)
+        let selectedAssociation;
+        if(req.body.id && req.body.id !== null && req.body.id !== "") {
+             selectedAssociation = await Association.findByPk(req.body.id)
+            if(!selectedAssociation)return res.status(404).send("association non trouvée")
+            await selectedAssociation.update({
+                nom: req.body.nom,
+                avatar: req.body.avatar?req.body.avatar: '',
+                description: req.body.description,
+                cotisationMensuelle: req.body.cotisationMensuelle,
+                frequenceCotisation: req.body.frequenceCotisation,
+                fondInitial: req.body.fondInitial,
+                seuilSecurite: req.body.seuilSecurite,
+                statut:req.body.statut?req.body.statut:'standard',
+                interetCredit: req.body.interetCredit,
+                validationLenght: req.body.validatorsNumber
+            })
+        } else {
+        selectedAssociation = await Association.create(data)
         const newCode = cryptoRandomString({length: 5, type: 'alphanumeric'});
-        newAssociation.code = newCode
-        await newAssociation.save()
-        return res.status(201).send(newAssociation)
+        selectedAssociation.code = newCode
+        await selectedAssociation.save()
+        }
+        return res.status(201).send(selectedAssociation)
     } catch (e) {
         next(e)
     }

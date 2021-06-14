@@ -148,8 +148,15 @@ const voteEngagement = async (req, res, next) => {
 
         let selectedAssociation = await Association.findByPk(req.body.associationId, {transaction})
         const allMembers = await selectedAssociation.getUsers({transaction})
+        let numberToVote = 0
         const validMembers = allMembers.filter(item => item.member.relation.toLowerCase() === 'member')
-        const numberToVote = Math.ceil(validMembers.length / 2)
+        if(selectedAssociation.validationLenght >0) {
+            numberToVote = selectedAssociation.validationLenght
+        } else if(validMembers.length <= 10) {
+            numberToVote =  validMembers.length
+        } else {
+             numberToVote = Math.ceil(validMembers.length / 3)
+        }
         const engagementVotes = await engagement.getVotor({transaction})
         const selectedMember = await Member.findByPk(engagement.creatorId, {transaction})
         let selectedUser = await User.findByPk(selectedMember.userId, {transaction})
@@ -161,7 +168,7 @@ const voteEngagement = async (req, res, next) => {
             } else engagement.accord = false
             const securityFund = selectedAssociation.fondInitial * selectedAssociation.seuilSecurite/100
             const dispoFund = selectedAssociation.fondInitial-securityFund
-            if(engagement.montant > dispoFund) {
+            if(engagement.montant > dispoFund && engagement.accord === true) {
                 engagement.statut = 'pending'
             } else {
                 selectedAssociation.fondInitial -= engagement.montant
@@ -176,7 +183,6 @@ const voteEngagement = async (req, res, next) => {
             await selectedUser.save({transaction})
             await selectedMember.save({transaction})
             await transaction.commit()
-
         const justVoted = await Engagement.findByPk(engagement.id,{
             include: [{model: Member, as: 'Creator'}, Tranche]
         })
