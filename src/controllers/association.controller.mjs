@@ -8,6 +8,7 @@ const Role = db.role
 
 
 const createAssociation = async (req, res, next) => {
+
     const data = {
         nom: req.body.nom,
         avatar: req.body.avatar?req.body.avatar: '',
@@ -18,7 +19,7 @@ const createAssociation = async (req, res, next) => {
         seuilSecurite: req.body.seuilSecurite,
         statut:req.body.statut?req.body.statut:'standard',
         interetCredit: req.body.interetCredit,
-        validationLenght: req.body.validatorsNumber
+        validationLenght: req.body.validatorsNumber>0?req.body.validatorsNumber: 0
     }
     try {
         let selectedAssociation;
@@ -35,11 +36,11 @@ const createAssociation = async (req, res, next) => {
                 seuilSecurite: req.body.seuilSecurite,
                 statut:req.body.statut?req.body.statut:'standard',
                 interetCredit: req.body.interetCredit,
-                validationLenght: req.body.validatorsNumber
+                validationLenght: req.body.validatorsNumber>0?req.body.validatorsNumber: 0
             })
         } else {
         selectedAssociation = await Association.create(data)
-        const newCode = cryptoRandomString({length: 5, type: 'alphanumeric'});
+            const newCode = cryptoRandomString({length: 5, type: 'alphanumeric'});
         selectedAssociation.code = newCode
         await selectedAssociation.save()
         }
