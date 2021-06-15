@@ -53,12 +53,11 @@ const addEngagement = async (req, res, next) => {
                         echeance:newEcheance
                     };
                     (async function(tranche) {
-                        let addedTranche = await newAdded.createTranche(tranche, {transaction})
+                        let addedTranche = await newAdded.createTranche(tranche)
                         if(i===0) {
                             addedTranche.montant += reste
                             await addedTranche.save({transaction})
                         }
-
                     })(newTranche)
                 }
             } else {
@@ -102,11 +101,28 @@ const updateEngagement = async (req, res, next) => {
         let selected = await Engagement.findByPk(req.body.id)
         await selected.update({
             libelle: req.body.libelle,
-            typeEngagement: req.body.typeEngagement,
-            echeance: req.body.echeance?req.body.echeance: new Date(),
+            statut:req.body.statut
         })
+        let selectedMember = await Member.findByPk(selected.creatorId)
+        let selectedUser = await User.findByPk(selectedMember.userId)
+        let selectedAssociation = await Association.findByPk(selectedMember.associationId)
+        if(req.body.statut === 'paying') {
+            const securityFund = selectedAssociation.fondInitial * selectedAssociation.seuilSecurite/100
+            const dispoFund = selectedAssociation.fondInitial-securityFund
+            if(selected.montant > dispoFund) {
+                selected.statut = 'pending'
+            } else {
+                selectedAssociation.fondInitial -= selected.montant
+                selectedUser.wallet += selected.montant
+                selectedMember.fonds -= selected.montant
+            }
+        }
+        await selectedAssociation.save()
+        await selected.save()
+        await selectedUser.save()
+        await selectedMember.save()
         const justUpdated = await Engagement.findByPk(selected.id, {
-            include: [Member, Tranche]
+            include: [{model: Member, as: 'Creator'}, Tranche]
         })
         return res.status(200).send(justUpdated)
     } catch (e) {
@@ -116,9 +132,13 @@ const updateEngagement = async (req, res, next) => {
 
 const getEngagementsByAssociation = async (req, res, next) => {
     try {
-        const selectedAssociation = await Association.findByPk(req.body.associationId)
-        const allMembers = await selectedAssociation.getUsers()
+        const allMembers = await Member.findAll({
+            where: {
+                associationId: req.body.associationId
+            }
+        })
         const memberIds = allMembers.map(item => item.id)
+
         const engagements = await Engagement.findAll({
             where: {
                 creatorId: {
@@ -165,17 +185,22 @@ const voteEngagement = async (req, res, next) => {
             const downVotes = engagementVotes.filter(engageVote => engageVote.vote.typeVote.toLowerCase() === 'down')
             if(upVotes.length>downVotes.length) {
                 engagement.accord = true
-            } else engagement.accord = false
-            const securityFund = selectedAssociation.fondInitial * selectedAssociation.seuilSecurite/100
-            const dispoFund = selectedAssociation.fondInitial-securityFund
-            if(engagement.montant > dispoFund && engagement.accord === true) {
-                engagement.statut = 'pending'
+                const securityFund = selectedAssociation.fondInitial * selectedAssociation.seuilSecurite/100
+                const dispoFund = selectedAssociation.fondInitial-securityFund
+                if(engagement.montant > dispoFund) {
+                    engagement.statut = 'pending'
+                } else {
+                    selectedAssociation.fondInitial -= engagement.montant
+                    engagement.statut = 'paying'
+                    selectedUser.wallet += engagement.montant
+                    selectedMember.fonds -= engagement.montant
+                }
             } else {
-                selectedAssociation.fondInitial -= engagement.montant
-                engagement.statut = 'paying'
-                selectedUser.wallet += engagement.montant
-                selectedMember.fonds -= engagement.montant
+                engagement.accord = false
+                engagement.statut = 'rejected'
             }
+
+
 
         }
             await selectedAssociation.save({transaction})
@@ -266,8 +291,10 @@ const payTranche = async(req, res, next) => {
         await selectedUser.save({transaction})
         await selectedMember.save({transaction})
         await selectedAssociation.save({transaction})
+        await transaction.commit()
         return res.status(200).send(selectedTranche)
     } catch (e) {
+        await transaction.rollback()
         next(e.message)
     }
 }

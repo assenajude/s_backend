@@ -72,9 +72,23 @@ const getAllUser = async (req, res, next) => {
     }
 }
 
+const getUserData = async (req, res, next) => {
+    console.log("getting user data.........................", req.body)
+    try {
+        const selectedUser = await User.findByPk(req.body.userId, {
+            attributes: {exclude: ['password']}
+        })
+        if(!selectedUser) return res.status(404).send("utilisateur non trouvé.")
+        return res.status(200).send(selectedUser)
+    } catch (e) {
+        next(e.message)
+    }
+}
+
 export {
     editUserInfo,
     editFund,
     updateImages,
-    getAllUser
+    getAllUser,
+    getUserData
 }
