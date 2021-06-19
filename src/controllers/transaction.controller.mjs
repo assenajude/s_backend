@@ -3,6 +3,8 @@ import decoder from 'jwt-decode'
 import genCode from 'crypto-random-string'
 const User = db.user
 const Transaction = db.transaction
+import {sendPushNotification} from '../utilities/pushNotification.mjs'
+import {isAdminUser} from '../utilities/adminRoles.mjs'
 
 const addTransaction = async (req, res, next) => {
     const data = {
@@ -26,6 +28,18 @@ const addTransaction = async (req, res, next) => {
         const justAdded = await Transaction.findByPk(newTransaction.id, {
             include: [{model:User, attributes: {exclude: ['password']}}]
         })
+
+        const allUsers = await User.findAll()
+        const adminUsers = []
+        for(let i=0; i<allUsers.length; i++) {
+            const currentUser = allUsers[i]
+            const userRoles = await currentUser.getRoles()
+            userRoles.forEach(userRole => {
+                if(userRole.name === 'admin') adminUsers.push(currentUser)
+            })
+        }
+        const usersTokens = adminUsers.map(user => user.pushNotificationToken)
+        sendPushNotification("Nouvelle transacton en cours", usersTokens, newTransaction.typeTransac, {notifType: 'transaction', mode: newTransaction.typeTransac})
         return res.status(200).send(justAdded)
     } catch (e) {
         await transaction.rollback()
@@ -44,10 +58,10 @@ const updateTransaction = async (req, res, next) => {
         if(req.body.libelle) selectedTransaction.libelle = req.body.libelle
         if(req.body.reseau) selectedTransaction.reseau = req.body.reseau
         if(req.body.numero) selectedTransaction.numero = req.body.numero
+        let selectedUser = await User.findByPk(req.body.userId, {transaction})
         if(req.body.statut) {
             selectedTransaction.statut = req.body.statut
-            if(req.body.statut.toLowerCase() === 'succeed') {
-                let selectedUser = await User.findByPk(req.body.userId, {transaction})
+            if(req.body.statut.toLowerCase() === 'succeeded') {
                     if(!selectedUser) return res.status(404).send({message: "Utilisateur non trouvé"})
                 if(req.body.typeTransac.toLowerCase() === 'depot') {
                     selectedUser.wallet += montant
@@ -65,6 +79,8 @@ const updateTransaction = async (req, res, next) => {
         const justUpdated = await Transaction.findByPk(selectedTransaction.id, {
             include: [{model: User, attributes: {exclude: ['password']}}]
         })
+        const userToken = selectedUser.pushNotificationToken
+        sendPushNotification("Votre transaction a été traitée.", [userToken], 'Transaction traitée.', {notifType: 'Transaction', mode: selectedTransaction.typeTransac})
         return res.status(200).send(justUpdated)
     } catch (e) {
         await transaction.rollback()
@@ -74,12 +90,10 @@ const updateTransaction = async (req, res, next) => {
 
 const getUserTransaction = async (req, res, next) => {
     const token = req.headers['x-access-token']
-    const user = decoder(token)
-    const userRoles = user.roles
-    const isAdminIndex = userRoles.findIndex(role => role === 'ROLE_ADMIN')
+    const isAdmin = isAdminUser(token)
     try {
         let userTransactions = []
-        if(isAdminIndex !== -1) {
+        if(isAdmin) {
         userTransactions = await Transaction.findAll({
             include: [{model: User, attributes: {exclude: ['password']}}]
         })

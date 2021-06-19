@@ -1,5 +1,6 @@
 import cryptoRandomString from "crypto-random-string";
 import db from '../../db/models/index.js'
+import {sendPushNotification, getUsersTokens} from "../utilities/pushNotification.mjs";
 const Op = db.Sequelize.Op
 const Association = db.association
 const Information = db.information
@@ -158,6 +159,20 @@ const updateAvatar = async (req, res, next) => {
     }
 }
 
+const updateReglement = async (req, res, next) => {
+    try {
+        let selectedAssociation = await Association.findByPk(req.body.associationId)
+        if(!selectedAssociation)return res.status(404).send("Association non trouvée.")
+        selectedAssociation.reglementInterieur = req.body.reglementUrl
+        await selectedAssociation.save()
+        const tokens = await getUsersTokens(selectedAssociation)
+        sendPushNotification("Reglement interieur mis à jour.", tokens, "Mis à jour reglement.", {notifType:'reglement', associationId: selectedAssociation.id})
+        return res.status(200).send(selectedAssociation)
+    } catch (e) {
+        next(e)
+    }
+}
+
 export {
     createAssociation,
     getAllAssociations,
@@ -166,5 +181,6 @@ export {
     getconnectedMemberRoles,
     updateAvatar,
     getSelectedAssociation,
-    getConnectedMember
+    getConnectedMember,
+    updateReglement
 }

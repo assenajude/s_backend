@@ -41,6 +41,9 @@ module.exports = {
       emploi: {
         type: Sequelize.STRING
       },
+      pushNotificationToken: {
+        type: Sequelize.STRING
+      },
       wallet: {
         type: Sequelize.INTEGER,
       },

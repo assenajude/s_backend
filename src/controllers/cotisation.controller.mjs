@@ -1,6 +1,7 @@
 import db from '../../db/models/index.js'
 const Cotisation = db.cotisation
 const Association = db.association
+import {getUsersTokens, sendPushNotification} from '../utilities/pushNotification.mjs'
 
 
 const addCotisation = async (req, res, next) => {
@@ -16,6 +17,8 @@ const addCotisation = async (req, res, next) => {
         let selectedAssociation = await Association.findByPk(req.body.associationId)
         if(!selectedAssociation) return res.status(404).send("Association non trouvée")
         const newcotisation = await selectedAssociation.createCotisation(data)
+        const tokens = await getUsersTokens(selectedAssociation)
+        sendPushNotification("Nouvelle cotisation ajoutée dans votre association", tokens, "Nouvelle cotisation", {notifType: 'cotisation', associationId: selectedAssociation.id})
         return res.status(200).send(newcotisation)
     } catch (e) {
         next(e.message)

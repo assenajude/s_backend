@@ -6,6 +6,7 @@ const Association = db.association
 const Cotisation = db.cotisation
 const Member_Info = db.member_info
 const Member_Cotisation = db.member_cotisation
+import {sendPushNotification, getUsersTokens} from '../utilities/pushNotification.mjs'
 
 const getAllMembers = async (req, res, next) => {
     try {
@@ -62,6 +63,9 @@ const respondToAdhesionMessage = async (req, res, next) => {
         associatedMember.adhesionDate = Date.now()
         associatedMember.statut = req.body.statut?req.body.statut:'ORDINAIRE'
         await associatedMember.save()
+        const selectedUser = await User.findByPk(req.body.userId)
+        const tokenTab = [selectedUser.pushNotificationToken]
+        sendPushNotification("Reponse demande adhésion.", tokenTab, "Reponse d'adhésion reçue.", {notifType: "adhesion", associationId: req.body.associationId})
         return res.status(200).send(associatedMember)
     } catch (e) {
         next(e.message)
@@ -120,14 +124,15 @@ const sendMessageToAssociation = async (req, res, next) => {
         let selectedAssociation = await Association.findByPk(req.body.associationId)
         if(!selectedAssociation) return res.status(404).send('association non trouvée')
         const connectedUser = await User.findByPk(req.body.userId)
-        if(!connectedUser) return res.status(404).send("utilisation non trouvé")
+        if(!connectedUser) return res.status(404).send("utilisateur non trouvé")
         await selectedAssociation.addUser(connectedUser, {
             through: {
                 relation:req.body.relation?req.body.relation : 'onDemand'
             }
         })
-
+        const membersNotifTokens = await getUsersTokens(selectedAssociation)
         const members = await Member.findAll()
+        sendPushNotification("Nouvelle demande d'adhésion.", membersNotifTokens, "Adhesion message", {notifType:'adhesion', statut: 'sending'})
         return res.status(200).send(members)
     } catch (e) {
         next(e)

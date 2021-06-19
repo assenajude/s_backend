@@ -1,4 +1,5 @@
 import db from '../../db/models/index.js'
+import {sendPushNotification} from "../utilities/pushNotification.mjs";
 const Member = db.member
 const Association = db.association
 const Information = db.information
@@ -28,6 +29,8 @@ const addInfo = async (req, res, next) => {
                 })
             })(currentMember)
         }
+        const membersToken = assoUsers.map(user => user.pushNotificationToken)
+        sendPushNotification("Nouvelle information dans votre association", membersToken, "Information", {notifType: "information", associationId: req.body.associationId})
         return res.status(201).send(newInfo)
     } catch (e) {
         next(e.message)

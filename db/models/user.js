@@ -39,6 +39,9 @@ module.exports = (sequelize, DataTypes) => {
     emploi: {
       type: DataTypes.STRING
     },
+    pushNotificationToken: {
+      type: DataTypes.STRING
+    },
     piece: DataTypes.ARRAY(DataTypes.STRING)
   }, {
     sequelize,

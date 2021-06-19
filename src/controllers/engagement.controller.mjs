@@ -1,5 +1,6 @@
 import db from '../../db/models/index.js'
 import dayjs from "dayjs";
+import {getUsersTokens, sendPushNotification} from "../utilities/pushNotification.mjs";
 const Op = db.Sequelize.Op
 const Association = db.association
 const Engagement = db.engagement
@@ -72,6 +73,8 @@ const addEngagement = async (req, res, next) => {
 
         }
         await transaction.commit()
+        const tokens = await getUsersTokens(selectedAssociation)
+        sendPushNotification("Nouvel engagement dans votre association", tokens, "Nouvel engagement.", {notifType: 'engagement', associationId: selectedAssociation.id})
         const justAdded = await Engagement.findByPk(newAdded.id, {
             include: [{model: Member, as: 'Creator'}]
         })
@@ -90,6 +93,10 @@ const validEngagement = async (req, res,next) => {
         const justUpdated = await Engagement.findByPk(selectedEngagement.id, {
             include: [Member, Tranche]
         })
+        const selectedMember = await Member.findByPk(selectedEngagement.memberId)
+        const selectedUser = await User.findByPk(selectedMember.userId)
+        const userToken = selectedUser.pushNotificationToken
+        sendPushNotification("Votre engagement a changé de status.", [userToken], "changement de status.", {notifType: 'engagement', associationId: selectedMember.associationId})
         return res.status(200).send(justUpdated)
     } catch (e) {
         next(e.message)
@@ -124,6 +131,8 @@ const updateEngagement = async (req, res, next) => {
         const justUpdated = await Engagement.findByPk(selected.id, {
             include: [{model: Member, as: 'Creator'}, Tranche]
         })
+        const userToken = selectedUser.pushNotificationToken
+        sendPushNotification("Votre engagement a été mis à jour.", [userToken], "engagement mis à jour.", {notifType: 'engagement', associationId: selectedMember.associationId})
         return res.status(200).send(justUpdated)
     } catch (e) {
         next(e.message)
@@ -216,6 +225,8 @@ const voteEngagement = async (req, res, next) => {
             engagement: justVoted,
             engagements: engagementVotes
         }
+        const userToken = selectedUser.pushNotificationToken
+        sendPushNotification("Votre engagement a été voté.", [userToken], "engagement voté", {notifType: 'engagement', associationId: selectedAssociation.id})
         return res.status(200).send(data)
     } catch (e) {
         await transaction.rollback()
@@ -292,6 +303,8 @@ const payTranche = async(req, res, next) => {
         await selectedMember.save({transaction})
         await selectedAssociation.save({transaction})
         await transaction.commit()
+        const tokens = getUsersTokens(selectedAssociation)
+        sendPushNotification("Un payement d'engagement a été fait dans votre association.", tokens, "Payement tranche engagement", {notifType: 'engagement', associationId: selectedMember.associationId})
         return res.status(200).send(selectedTranche)
     } catch (e) {
         await transaction.rollback()
@@ -310,6 +323,24 @@ const getSelectedEngagement = async (req, res, next) => {
         next(e.message)
     }
 }
+
+const deleteEngagement = async (req, res, next) => {
+    try {
+        let selectedEngagement = await Engagement.findByPk(req.body.engagementId)
+        if(!selectedEngagement)return res.status(404).send("Engagement introuvable.")
+        if(selectedEngagement.accord === false && selectedEngagement.solde === 0) {
+            await selectedEngagement.destroy()
+        } else if(selectedEngagement.accord === true && selectedEngagement.statut === 'pending' && selectedEngagement.solde === 0) {
+            await selectedEngagement.destroy()
+        }else {
+            return res.status(403).send("Impossible de supprimer cet engagement.")
+        }
+        return res.status(200).send({engagementId: req.body.engagementId})
+    } catch (e) {
+        next(e.message)
+    }
+}
+
 export {
     addEngagement,
     getEngagementsByAssociation,
@@ -318,5 +349,6 @@ export {
     voteEngagement,
     getEngagementVotes,
     payTranche,
-    getSelectedEngagement
+    getSelectedEngagement,
+    deleteEngagement
 }
