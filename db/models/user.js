@@ -39,6 +39,10 @@ module.exports = (sequelize, DataTypes) => {
     emploi: {
       type: DataTypes.STRING
     },
+    isFirstTimeConnect: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
+    },
     pushNotificationToken: {
       type: DataTypes.STRING
     },

@@ -37,7 +37,7 @@ import db from './db/models/index.js'
 db.sequelize.sync().then(() => {
     logger.log('the app has been successfully connected to the database');
 }).catch(error => {
-    logger.log(error.message)});
+    logger.log(error)});
 import {routes} from './src/startup/routes.mjs'
 routes(app)
 import {errorHandler} from './src/middlewares/error.handler.mjs'

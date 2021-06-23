@@ -1,5 +1,5 @@
-import decoder from 'jwt-decode'
 import db from '../../db/models/index.js'
+import decoder from 'jwt-decode'
 const Member = db.member
 const User = db.user
 const Association = db.association
@@ -8,26 +8,19 @@ const Member_Info = db.member_info
 const Member_Cotisation = db.member_cotisation
 import {sendPushNotification, getUsersTokens} from '../utilities/pushNotification.mjs'
 
-const getAllMembers = async (req, res, next) => {
+const getSelectedAssociationMembers = async (req, res, next) => {
     try {
-        const members = await Member.findAll()
+        const selectedAssociation = await Association.findByPk(req.body.associationId)
+        if(!selectedAssociation) return res.status(404).send({message: "association non trouvée."})
+        const members = await selectedAssociation.getUsers({
+            attributes: {exclude: ['password']}
+        })
         return res.status(200).send(members)
     } catch (e) {
         next(e.message)
     }
 }
 
-const getUserAssociations = async (req, res, next) => {
-    const authToken = req.headers['x-access-token']
-    const connectedUser = decoder(authToken)
-    try {
-        const selectedUser = await User.findByPk(connectedUser.id)
-        const memberAssociations = await selectedUser.getAssociations()
-        return res.status(200).send(memberAssociations)
-    } catch (e) {
-        next(e)
-    }
-}
 
 const addNewMember = async (req, res, next) => {
     try {
@@ -64,8 +57,10 @@ const respondToAdhesionMessage = async (req, res, next) => {
         associatedMember.statut = req.body.statut?req.body.statut:'ORDINAIRE'
         await associatedMember.save()
         const selectedUser = await User.findByPk(req.body.userId)
+        const selectedAssociation = await Association.findByPk(req.body.associationId)
         const tokenTab = [selectedUser.pushNotificationToken]
-        sendPushNotification("Reponse demande adhésion.", tokenTab, "Reponse d'adhésion reçue.", {notifType: "adhesion", associationId: req.body.associationId})
+        const message = req.body.adminResponse === 'member'? `Votre demande d'adhesion à ${selectedAssociation.nom} a été acceptée`:`Votre demande d'adhesion à ${selectedAssociation.nom} a été refusée.`
+        sendPushNotification(message, tokenTab, `Reponse d'adhésion à ${selectedAssociation.nom} `, {notifType: "adhesion",statut: 'response', associationId: req.body.associationId})
         return res.status(200).send(associatedMember)
     } catch (e) {
         next(e.message)
@@ -90,6 +85,22 @@ const updateMemberData = async (req, res, next) => {
     }
 }
 
+
+const getConnectedMemberUser = async (req, res, next) => {
+    const token = req.headers['x-access-token']
+    const user = decoder(token)
+    try {
+        const selectedAssociation = await Association.findByPk(req.body.associationId)
+        if(!selectedAssociation) return res.status(404).send({message: "association non trouvé."})
+        const associationMembers = await selectedAssociation.getUsers({
+            attributes: {exclude: ['password']}
+        })
+        const connectedMember = associationMembers.find(item => item.id === user.id)
+        return res.status(200).send(connectedMember)
+    } catch (e) {
+        next(e)
+    }
+}
 
 const getMemberInfos = async (req, res, next) => {
     try {
@@ -130,10 +141,12 @@ const sendMessageToAssociation = async (req, res, next) => {
                 relation:req.body.relation?req.body.relation : 'onDemand'
             }
         })
+        const userAssociationState = await connectedUser.getAssociations()
         const membersNotifTokens = await getUsersTokens(selectedAssociation)
-        const members = await Member.findAll()
-        sendPushNotification("Nouvelle demande d'adhésion.", membersNotifTokens, "Adhesion message", {notifType:'adhesion', statut: 'sending'})
-        return res.status(200).send(members)
+        const filteredTokens = membersNotifTokens.filter(token => token !== connectedUser.pushNotificationToken)
+        const userName = connectedUser.username?connectedUser.username : connectedUser.nom
+        sendPushNotification(`${userName} souhaiterais adhérer à ${selectedAssociation.nom}.`, filteredTokens, `Demande d'adhesion à ${selectedAssociation.nom}`, {notifType:'adhesion', statut: 'sending', associationId: selectedAssociation.id})
+        return res.status(200).send(userAssociationState)
     } catch (e) {
         next(e)
     }
@@ -194,8 +207,15 @@ const payCotisation = async (req, res, next) => {
         await selectedUser.save({transaction})
         await selectedAssociation.save({transaction})
         const memberCotisState = await selectedMember.getCotisations({transaction})
+        const memberName = selectedUser.userName?selectedUser.userName: selectedUser.nom
+        const tokens = await getUsersTokens(selectedAssociation, {transaction})
+        const filteredTokens = tokens.filter(token => token !== selectedUser.pushNotificationToken)
+        sendPushNotification(`${memberName} a payé une cotisation dans ${selectedAssociation.nom}`, filteredTokens, 'Payement cotisation', {notifType: 'cotisation', associationId: selectedAssociation.id})
+       const data = {
+           memberId: selectedMember.id, cotisations: memberCotisState
+       }
         await transaction.commit()
-        return res.status(200).send({memberId: selectedMember.id, cotisations: memberCotisState})
+        return res.status(200).send(data)
     } catch (e) {
         await transaction.rollback()
         next(e.message)
@@ -211,9 +231,9 @@ const getMembersCotisations = async (req, res, next) => {
         })
         let membersCotisation =  {}
         for(let i=0; i<allMembers.length; i++) {
-            const selectedMember = allMembers[i]
-            const memberId = selectedMember.id
-            const selectedMemberCotisations = await selectedMember.getCotisations()
+            const selectedMember = allMembers[i];
+            const memberId = selectedMember.id;
+            const selectedMemberCotisations = await selectedMember.getCotisations();
             membersCotisation[memberId] = selectedMemberCotisations
         }
         return res.status(200).send(membersCotisation)
@@ -222,9 +242,20 @@ const getMembersCotisations = async (req, res, next) => {
     }
 }
 
+const getConnectedUserAssociations = async (req, res, next) => {
+    const token = req.headers['x-access-token']
+    const user = decoder(token)
+    try {
+        const connectedUser = await User.findByPk(user.id)
+        if(!connectedUser)return res.status(404).send({message: "utilisateur non trouvé"})
+        const userAssociations = await connectedUser.getAssociations()
+        return res.status(200).send(userAssociations)
+    } catch (e) {
+        next(e)
+    }
+}
 export {
-    getAllMembers,
-    getUserAssociations,
+    getSelectedAssociationMembers,
     addNewMember,
     respondToAdhesionMessage,
     updateMemberData,
@@ -233,5 +264,8 @@ export {
     sendMessageToAssociation,
     editImages,
     payCotisation,
-    getMembersCotisations
+    getMembersCotisations,
+    getConnectedUserAssociations,
+    getConnectedMemberUser
+
 }

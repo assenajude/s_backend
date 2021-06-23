@@ -39,7 +39,7 @@ const addTransaction = async (req, res, next) => {
             })
         }
         const usersTokens = adminUsers.map(user => user.pushNotificationToken)
-        sendPushNotification("Nouvelle transacton en cours", usersTokens, newTransaction.typeTransac, {notifType: 'transaction', mode: newTransaction.typeTransac})
+        sendPushNotification("Nouvelle transacton en cours", usersTokens, newTransaction.typeTransac, {notifType: 'transaction', mode: newTransaction.typeTransac, transactionId: newTransaction.id})
         return res.status(200).send(justAdded)
     } catch (e) {
         await transaction.rollback()
@@ -80,7 +80,7 @@ const updateTransaction = async (req, res, next) => {
             include: [{model: User, attributes: {exclude: ['password']}}]
         })
         const userToken = selectedUser.pushNotificationToken
-        sendPushNotification("Votre transaction a été traitée.", [userToken], 'Transaction traitée.', {notifType: 'Transaction', mode: selectedTransaction.typeTransac})
+        sendPushNotification("Votre transaction a été traitée.", [userToken], 'Transaction traitée.', {notifType: 'Transaction', mode: selectedTransaction.typeTransac, transactionId: selectedTransaction.id})
         return res.status(200).send(justUpdated)
     } catch (e) {
         await transaction.rollback()
@@ -90,6 +90,8 @@ const updateTransaction = async (req, res, next) => {
 
 const getUserTransaction = async (req, res, next) => {
     const token = req.headers['x-access-token']
+    const user = decoder(token)
+    const idUser = req.body.userId || user.id
     const isAdmin = isAdminUser(token)
     try {
         let userTransactions = []
@@ -100,7 +102,7 @@ const getUserTransaction = async (req, res, next) => {
         } else {
             userTransactions = await Transaction.findAll({
                 where: {
-                    userId: req.body.userId
+                    userId: idUser
                 },
                 include: [{model: User, attributes: {exclude: ['password']}}]
             })

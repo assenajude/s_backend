@@ -70,7 +70,6 @@ const signin = async (req, res, next) => {
         const selectedUser = await User.findByPk(currentUser.id, {
             attributes: {exclude: ['password']}
         })
-
         let token = jwt.sign({id: currentUser.id, username: selectedUser.username, email: selectedUser.email, roles: authorities}, process.env.JWT_SECRET, {
             expiresIn: 86400
         })

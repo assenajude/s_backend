@@ -18,7 +18,7 @@ const addCotisation = async (req, res, next) => {
         if(!selectedAssociation) return res.status(404).send("Association non trouvée")
         const newcotisation = await selectedAssociation.createCotisation(data)
         const tokens = await getUsersTokens(selectedAssociation)
-        sendPushNotification("Nouvelle cotisation ajoutée dans votre association", tokens, "Nouvelle cotisation", {notifType: 'cotisation', associationId: selectedAssociation.id})
+        sendPushNotification(`Il y'a une nouvelle cotisation dans ${selectedAssociation.nom}`, tokens, "Nouvelle cotisation", {notifType: 'cotisation', associationId: selectedAssociation.id})
         return res.status(200).send(newcotisation)
     } catch (e) {
         next(e.message)

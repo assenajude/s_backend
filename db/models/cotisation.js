@@ -22,7 +22,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       defaultValue: 0
     },
-    motif: DataTypes.STRING,
+    motif: {
+      type: DataTypes.STRING,
+      max: 50
+    },
     typeCotisation: {
       type: DataTypes.STRING,
       defaultValue: 'mensuel'

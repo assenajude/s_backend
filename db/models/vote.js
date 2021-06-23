@@ -14,7 +14,6 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
   vote.init({
-
     typeVote: DataTypes.STRING
   }, {
     sequelize,

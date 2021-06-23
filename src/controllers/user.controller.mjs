@@ -1,5 +1,6 @@
 import db from '../../db/models/index.js'
 import {isAdminUser} from '../utilities/adminRoles.mjs'
+import {sendPushNotification} from "../utilities/pushNotification.mjs";
 const User = db.user
 
 const editUserInfo = async (req, res, next) => {
@@ -91,12 +92,19 @@ const updatePushNotifToken = async (req, res, next) => {
         })
         if(!selectedUser) return res.status(404).send("utilisateur non trouvé")
         selectedUser.pushNotificationToken = req.body.notificationToken
+        const userName = selectedUser.username?selectedUser.username : selectedUser.nom
+        if(selectedUser.isFirstTimeConnect) {
+            sendPushNotification(`Félicitation, nous sommes heureux de vous accueillir. SVP complétez votre profil pour qu'on puisse mieux se connaître.`, [selectedUser.pushNotificationToken],`Bienvenue ${userName}`, {notifType: 'userCompte'})
+            selectedUser.isFirstTimeConnect = false
+        }
         await selectedUser.save()
         return res.status(200).send(selectedUser)
     } catch (e) {
         next(e)
     }
 }
+
+
 export {
     editUserInfo,
     editFund,

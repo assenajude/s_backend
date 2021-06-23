@@ -47,6 +47,9 @@ module.exports = {
       wallet: {
         type: Sequelize.INTEGER,
       },
+      isFirstTimeConnect: {
+        type: Sequelize.BOOLEAN,
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

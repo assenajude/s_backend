@@ -1,12 +1,12 @@
 import express from 'express'
-import {verifyToken, isAdminOrModerator, isModerator, isAdmin} from '../middlewares/authJWT.mjs'
+import {verifyToken, isAdminOrModerator} from '../middlewares/authJWT.mjs'
 
 const router = express.Router()
-import {getUserAssociations, addNewMember,respondToAdhesionMessage,payCotisation,getMembersCotisations,
-    updateMemberData, getAllMembers, getMemberInfos,readInfo, sendMessageToAssociation, editImages } from '../controllers/member.controller.mjs'
+import {addNewMember,respondToAdhesionMessage,payCotisation,getMembersCotisations, getConnectedUserAssociations,
+    updateMemberData, getSelectedAssociationMembers, getMemberInfos,readInfo, sendMessageToAssociation,
+    editImages, getConnectedMemberUser} from '../controllers/member.controller.mjs'
 
-router.get('/',verifyToken, getAllMembers)
-router.get('/associations',verifyToken, getUserAssociations)
+router.post('/byAssociation',verifyToken, getSelectedAssociationMembers)
 router.post('/',[verifyToken, isAdminOrModerator], addNewMember)
 router.patch('/respondToAdhesionMessage',[verifyToken, isAdminOrModerator],respondToAdhesionMessage)
 router.patch('/updateOne',verifyToken, updateMemberData)
@@ -16,5 +16,8 @@ router.patch('/sendAdhesionMessage',verifyToken, sendMessageToAssociation)
 router.patch('/editImages',verifyToken, editImages)
 router.patch('/payCotisations',verifyToken, payCotisation)
 router.post('/membersCotisations',verifyToken, getMembersCotisations)
+router.get('/associations',verifyToken, getConnectedUserAssociations)
+router.post('/connectedMemberUser',verifyToken, getConnectedMemberUser)
+
 
 export default router

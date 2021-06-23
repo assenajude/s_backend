@@ -26,7 +26,10 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
   engagement.init({
-    libelle: DataTypes.STRING,
+    libelle: {
+      type: DataTypes.STRING,
+      max: 50
+    },
     montant: {
       type: DataTypes.INTEGER,
       defaultValue: 0
