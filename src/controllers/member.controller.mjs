@@ -4,6 +4,8 @@ const Member = db.member
 const User = db.user
 const Association = db.association
 const Cotisation = db.cotisation
+const Historique = db.historique
+const Engagement = db.engagement
 const Member_Info = db.member_info
 const Member_Cotisation = db.member_cotisation
 import {sendPushNotification, getUsersTokens} from '../utilities/pushNotification.mjs'
@@ -52,16 +54,37 @@ const respondToAdhesionMessage = async (req, res, next) => {
                 userId: req.body.userId
             }
         })
+        if(req.body.adminResponse.toLowerCase() === 'rejected' && associatedMember.relation.toLowerCase() !== 'ondemand' && associatedMember.fonds !== 0) {
+            return res.status(403).send({message: "Ce membre ne peut pas quitter l'association maintenant."})
+        }
         associatedMember.relation = req.body.adminResponse
-        associatedMember.adhesionDate = Date.now()
-        associatedMember.statut = req.body.statut?req.body.statut:'ORDINAIRE'
+            associatedMember.adhesionDate = Date.now()
+        if(req.body.adminResponse === 'member' && req.body.info.toLowerCase() === 'new') {
+            associatedMember.statut = req.body.statut?req.body.statut:'ORDINAIRE'
+            associatedMember.setRoles([1])
+        } else if (req.body.adminResponse === 'rejected' && req.body.info.toLowerCase() === 'old'){
+            associatedMember.statut = req.body.statut?req.body.statut: 'OLD'
+        }
         await associatedMember.save()
         const selectedUser = await User.findByPk(req.body.userId)
         const selectedAssociation = await Association.findByPk(req.body.associationId)
+        const associationMembers = await selectedAssociation.getUsers({
+            attributes: {exclude: ['password']}
+        })
+        const currentMember = associationMembers.find(user => user.id === req.body.userId)
         const tokenTab = [selectedUser.pushNotificationToken]
-        const message = req.body.adminResponse === 'member'? `Votre demande d'adhesion à ${selectedAssociation.nom} a été acceptée`:`Votre demande d'adhesion à ${selectedAssociation.nom} a été refusée.`
+        let message = ''
+        if(req.body.adminResponse.toLowerCase() === 'member' && req.body.info.toLowerCase() === 'new') {
+            message = `Votre demande d'adhésion à ${selectedAssociation.nom} a été acceptée.`
+        } else if(req.body.adminResponse.toLowerCase() === 'rejected' && req.body.info.toLowerCase() === 'new') {
+             message = `Votre demande d'adhésion à ${selectedAssociation.nom} a été refusée.`
+        } else if(req.body.adminResponse.toLowerCase() === 'member' && req.body.info.toLowerCase() === 'old') {
+            message = `Votre demande de quitter ${selectedAssociation.nom} a été refusée.`
+        } else {
+            message = `Votre demande de quitter ${selectedAssociation.nom} a été acceptée.`
+        }
         sendPushNotification(message, tokenTab, `Reponse d'adhésion à ${selectedAssociation.nom} `, {notifType: "adhesion",statut: 'response', associationId: req.body.associationId})
-        return res.status(200).send(associatedMember)
+        return res.status(200).send(currentMember)
     } catch (e) {
         next(e.message)
     }
@@ -79,7 +102,14 @@ const updateMemberData = async (req, res, next) => {
         if(req.body.adhesionDate) selected.adhesionDate = req.body.adhesionDate
         if(req.body.backImage) selected.backImage = req.body.backImage
         await selected.save()
-        return res.status(200).send(selected)
+        const memberAssociation = await Association.findByPk(selected.associationId)
+        const associationMembers = await memberAssociation.getUsers({
+            attributes: {exclude: ['password']}
+        })
+        const currentMember = associationMembers.find(member => member.id === selected.userId)
+        const memberName = currentMember.username?currentMember.username : currentMember.nom
+        sendPushNotification(`Felicitation ${memberName}, vos infos ont été mises à jour avec succès dans ${memberAssociation.nom}.`, [currentMember.pushNotificationToken],"Mise à jour information personnel", {notifType: 'adhesion', associationId: memberAssociation.id})
+        return res.status(200).send(currentMember)
     } catch (e) {
         next(e.message)
     }
@@ -138,7 +168,8 @@ const sendMessageToAssociation = async (req, res, next) => {
         if(!connectedUser) return res.status(404).send("utilisateur non trouvé")
         await selectedAssociation.addUser(connectedUser, {
             through: {
-                relation:req.body.relation?req.body.relation : 'onDemand'
+                relation:req.body.relation?req.body.relation : 'onDemand',
+                statut: req.body.statut?req.body.statut : 'new'
             }
         })
         const userAssociationState = await connectedUser.getAssociations()
@@ -151,6 +182,35 @@ const sendMessageToAssociation = async (req, res, next) => {
         next(e)
     }
 }
+
+const leaveAssociation = async (req, res, next) => {
+    try {
+      let selectedMember = await Member.findOne({
+          where: {
+              associationId: req.body.associationId,
+              userId: req.body.userId
+          }
+      })
+        if(!selectedMember) return res.status(404).send({message: "Membre non trouvé."})
+        selectedMember.relation = 'onLeave'
+        await selectedMember.save()
+        const selectedAssociation = await Association.findByPk(req.body.associationId)
+        const connectedUser = await User.findByPk(req.body.userId)
+        const associationMembers = await selectedAssociation.getUsers({
+            attributes: {exclude: ['password']}
+        })
+        const currentMember = associationMembers.find(item => item.id === req.body.userId)
+        const membersNotifTokens = await getUsersTokens(selectedAssociation)
+        const filteredTokens = membersNotifTokens.filter(token => token !== connectedUser.pushNotificationToken)
+        const userName = connectedUser.username?connectedUser.username : connectedUser.nom
+        sendPushNotification(`${userName} souhaiterais quitter ${selectedAssociation.nom}.`, filteredTokens, `Demande de quitter ${selectedAssociation.nom}`, {notifType:'adhesion', statut: 'leaving', associationId: selectedAssociation.id})
+        return res.status(200).send(currentMember)
+    } catch (e) {
+        next(e)
+    }
+}
+
+
 
 const editImages = async(req, res, next) => {
     try {
@@ -254,6 +314,40 @@ const getConnectedUserAssociations = async (req, res, next) => {
         next(e)
     }
 }
+
+const deleteMember = async (req, res, next) => {
+    try {
+        let selectedMember = await Member.findByPk(req.body.memberId)
+        if(!selectedMember) return res.status(404).send({message: "Membre introuvable."})
+        const memberEngagements = await Engagement.findAll({
+            where: {
+                creatorId: selectedMember.id
+            }
+        })
+        const memberCotisations = await selectedMember.getCotisations()
+        const data = {
+            member: selectedMember,
+            enagegements: memberEngagements,
+            cotisations: memberCotisations
+        }
+
+        if(selectedMember.fonds !== 0) {
+            return res.status(403).send({message: "Impossible de supprimer ce membre, il possède des fonds inutilisés."})
+        }
+        await Historique.create({
+            histoType: "saving",
+            description: "deletion of association member",
+            histoData: [data]
+        })
+        // await selectedMember.setEngagements([])
+        // await selectedMember.setCotisations([])
+        await selectedMember.destroy()
+        return res.status(200).send({memberId: req.body.memberId, userId: selectedMember.userId})
+    } catch (e) {
+        next(e)
+    }
+}
+
 export {
     getSelectedAssociationMembers,
     addNewMember,
@@ -266,6 +360,8 @@ export {
     payCotisation,
     getMembersCotisations,
     getConnectedUserAssociations,
-    getConnectedMemberUser
+    getConnectedMemberUser,
+    leaveAssociation,
+    deleteMember
 
 }

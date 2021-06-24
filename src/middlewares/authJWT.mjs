@@ -57,7 +57,7 @@ const isModerator = async (req, res, next) => {
 const isAdminOrModerator = async (req, res, next) => {
         const user = await User.findByPk(req.userId);
          const userRoles = await user.getRoles();
-         let memberRoles;
+         let memberRoles = [];
          if(req.associationId) {
              const selectedMember = await Member.findOne({
                  where: {

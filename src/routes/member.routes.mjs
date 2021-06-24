@@ -4,7 +4,7 @@ import {verifyToken, isAdminOrModerator} from '../middlewares/authJWT.mjs'
 const router = express.Router()
 import {addNewMember,respondToAdhesionMessage,payCotisation,getMembersCotisations, getConnectedUserAssociations,
     updateMemberData, getSelectedAssociationMembers, getMemberInfos,readInfo, sendMessageToAssociation,
-    editImages, getConnectedMemberUser} from '../controllers/member.controller.mjs'
+    editImages, getConnectedMemberUser, leaveAssociation, deleteMember} from '../controllers/member.controller.mjs'
 
 router.post('/byAssociation',verifyToken, getSelectedAssociationMembers)
 router.post('/',[verifyToken, isAdminOrModerator], addNewMember)
@@ -18,6 +18,8 @@ router.patch('/payCotisations',verifyToken, payCotisation)
 router.post('/membersCotisations',verifyToken, getMembersCotisations)
 router.get('/associations',verifyToken, getConnectedUserAssociations)
 router.post('/connectedMemberUser',verifyToken, getConnectedMemberUser)
+router.patch('/leaveAssociation', verifyToken, leaveAssociation)
+router.delete('/deleteMember', [verifyToken, isAdminOrModerator], deleteMember)
 
 
 export default router

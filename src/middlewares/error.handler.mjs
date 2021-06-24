@@ -5,7 +5,7 @@ const errorHandler = async (error, req, res, next) => {
     if(!error.statusCode) statusCode = 500
     else statusCode = error.statusCode
     logger.log(error.message)
-    return res.status(statusCode).send({"error": error.message})
+    return res.status(statusCode).send(error.message)
 }
 
 export {errorHandler}

@@ -180,7 +180,7 @@ const voteEngagement = async (req, res, next) => {
         let selectedAssociation = await Association.findByPk(req.body.associationId, {transaction})
         const allMembers = await selectedAssociation.getUsers({transaction})
         let numberToVote = 0
-        const validMembers = allMembers.filter(item => item.member.relation.toLowerCase() === 'member')
+        const validMembers = allMembers.filter(item => item.member.relation.toLowerCase() === 'member' || item.member.relation.toLowerCase() === 'onleave')
         if(selectedAssociation.validationLenght >0) {
             numberToVote = selectedAssociation.validationLenght
         } else if(validMembers.length <= 10) {

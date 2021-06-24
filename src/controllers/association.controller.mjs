@@ -89,13 +89,8 @@ const editMemberRoles = async (req, res, next) => {
         } else {
             await selectedMember.setRoles([1])
         }
-        const memberWithRoles= await selectedMember.getRoles()
-        const newRoles=[]
-        memberWithRoles.forEach(role => {
-            const selectedRole = 'ROLE_'+role.name.toUpperCase()
-            newRoles.push(selectedRole)
-        })
-        return res.status(200).send(newRoles)
+
+        return res.status(200).send({message: "Role édité avec succès."})
     } catch (e) {
         next(e.message)
     }
