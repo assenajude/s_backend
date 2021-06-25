@@ -39,7 +39,7 @@ const addTransaction = async (req, res, next) => {
             })
         }
         const usersTokens = adminUsers.map(user => user.pushNotificationToken)
-        sendPushNotification("Nouvelle transacton en cours", usersTokens, newTransaction.typeTransac, {notifType: 'transaction', mode: newTransaction.typeTransac, transactionId: newTransaction.id})
+        sendPushNotification(`${justAdded.number} nouvelle transacton en cours`, usersTokens, newTransaction.typeTransac, {notifType: 'transaction', mode: newTransaction.typeTransac, transactionId: newTransaction.id})
         return res.status(200).send(justAdded)
     } catch (e) {
         await transaction.rollback()
@@ -80,7 +80,7 @@ const updateTransaction = async (req, res, next) => {
             include: [{model: User, attributes: {exclude: ['password']}}]
         })
         const userToken = selectedUser.pushNotificationToken
-        sendPushNotification("Votre transaction a été traitée.", [userToken], 'Transaction traitée.', {notifType: 'Transaction', mode: selectedTransaction.typeTransac, transactionId: selectedTransaction.id})
+        sendPushNotification(`Votre transaction ${justUpdated.number} a été traitée.`, [userToken], 'Transaction traitée.', {notifType: 'Transaction', mode: selectedTransaction.typeTransac, transactionId: selectedTransaction.id})
         return res.status(200).send(justUpdated)
     } catch (e) {
         await transaction.rollback()

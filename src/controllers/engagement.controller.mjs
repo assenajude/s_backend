@@ -134,7 +134,7 @@ const updateEngagement = async (req, res, next) => {
             include: [{model: Member, as: 'Creator'}, Tranche]
         })
         const userToken = selectedUser.pushNotificationToken
-        sendPushNotification(`Votre engagement '${selected.libelle - selected.montant}' a été mis à jour.`, [userToken], "Mis à jour engagement.", {notifType: 'engagement', associationId: selectedMember.associationId})
+        sendPushNotification(`Votre engagement '${selected.libelle} - ${selected.montant}' a été mis à jour.`, [userToken], "Mis à jour engagement.", {notifType: 'engagement', associationId: selectedMember.associationId})
         return res.status(200).send(justUpdated)
     } catch (e) {
         next(e.message)

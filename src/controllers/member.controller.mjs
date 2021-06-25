@@ -176,7 +176,7 @@ const sendMessageToAssociation = async (req, res, next) => {
         const membersNotifTokens = await getUsersTokens(selectedAssociation)
         const filteredTokens = membersNotifTokens.filter(token => token !== connectedUser.pushNotificationToken)
         const userName = connectedUser.username?connectedUser.username : connectedUser.nom
-        sendPushNotification(`${userName} souhaiterais adhérer à ${selectedAssociation.nom}.`, filteredTokens, `Demande d'adhesion à ${selectedAssociation.nom}`, {notifType:'adhesion', statut: 'sending', associationId: selectedAssociation.id})
+        sendPushNotification(`${userName} souhaiterais adhérer ${selectedAssociation.nom}.`, filteredTokens, `Demande d'adhesion à ${selectedAssociation.nom}`, {notifType:'adhesion', statut: 'sending', associationId: selectedAssociation.id})
         return res.status(200).send(userAssociationState)
     } catch (e) {
         next(e)
