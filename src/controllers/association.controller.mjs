@@ -1,9 +1,13 @@
 import cryptoRandomString from "crypto-random-string";
+import decoder from 'jwt-decode'
 import db from '../../db/models/index.js'
 import {sendPushNotification, getUsersTokens} from "../utilities/pushNotification.mjs";
 const Op = db.Sequelize.Op
 const Association = db.association
+const Cotisation = db.cotisation
 const Information = db.information
+const Engagement = db.engagement
+const Historique = db.historique
 const Member = db.member
 const Role = db.role
 
@@ -140,6 +144,70 @@ const updateReglement = async (req, res, next) => {
     }
 }
 
+const deleteOne = async (req, res, next) => {
+    const token = req.headers['x-access-token']
+    const user = decoder(token)
+    try {
+        let selectedAssociation = await Association.findByPk(req.body.associationId)
+        if(!selectedAssociation) return res.status(404).send({message: "Association non trouvée."})
+        if(selectedAssociation.fondInitial !== 0) {
+            return res.status(401).send({message: "Vous n'êtes pas autorisé à supprimer cette association."})
+        }
+        const associationMembers = await Member.findAll({
+            where: {
+                associationId: selectedAssociation.id
+            }
+        })
+        let engagementsInAssociation = []
+        if(associationMembers.length > 0) {
+        const membersIds = associationMembers.map(item => item.id)
+         engagementsInAssociation = await Engagement.findAll({
+            where: {
+                creatorId: {
+                    [Op.in]: [membersIds]
+                }
+            }
+        })
+        }
+        const inPaying = engagementsInAssociation.some(engage => engage.statut.toLowerCase() === 'paying')
+        if(inPaying) {
+            return res.status(401).send({message: "Vous n'êtes pas autorisé à supprimer cette association."})
+        }
+        const isSomeFunds = associationMembers.some(member => member.fonds !== 0)
+        if(isSomeFunds) {
+            return res.status(401).send({message: "Vous n'êtes pas autorisé à supprimer cette association."})
+        }
+        const associationInfos = await Information.findAll({
+            where: {
+                associationId: selectedAssociation.id
+            }
+        })
+        const associationCotisations = await Cotisation.findAll({
+            where: {
+                associationId: selectedAssociation.id
+            }
+        })
+
+        const data = {
+            deleter: user,
+            association: selectedAssociation,
+            members: associationMembers,
+            cotisations: associationCotisations,
+            engagements: engagementsInAssociation,
+            infos: associationInfos
+        }
+        await Historique.create({
+            histoType: "association",
+            description: "deleting association",
+            histoData: [data]
+        })
+        await selectedAssociation.destroy()
+        return res.status(200).send({associationId: req.body.associationId})
+    } catch (e) {
+        next(e)
+    }
+}
+
 export {
     createAssociation,
     getAllAssociations,
@@ -147,5 +215,6 @@ export {
     getconnectedMemberRoles,
     updateAvatar,
     getSelectedAssociation,
-    updateReglement
+    updateReglement,
+    deleteOne
 }

@@ -1,21 +1,27 @@
 import db from '../../db/models/index.js'
 import dayjs from "dayjs";
+import decoder from 'jwt-decode'
 import {getUsersTokens, sendPushNotification} from "../utilities/pushNotification.mjs";
 const Op = db.Sequelize.Op
 const Association = db.association
 const Engagement = db.engagement
+const Historique = db.historique
 const Member = db.member
 const Tranche = db.tranche
 const User = db.user
 
+
 const addEngagement = async (req, res, next) => {
+    const currentMontant = Number(req.body.montant)
+
     const data = {
         libelle: req.body.libelle,
         typeEngagement: req.body.typeEngagement,
         progession: req.body.progression?req.body.progression:0,
         accord: req.body.accord?req.body.accord:false,
         echeance: req.body.echeance?req.body.echeance: new Date(),
-        statut:req.body.status?req.body.status : 'voting'
+        statut:req.body.status?req.body.status : 'voting',
+        montant: currentMontant
     }
     const transaction =await db.sequelize.transaction()
     try {
@@ -23,12 +29,20 @@ const addEngagement = async (req, res, next) => {
         const selectedAssociation = await Association.findByPk(req.body.associationId, {transaction})
         if(!selectedAssociation) return res.status(404).send({message: 'association non trouvé'})
         if(!selectedMember)return res.status(404).send({message: 'utilisateur nom trouvé'})
-        let newAdded = await Engagement.create(data, {transaction})
-        await newAdded.setCreator(selectedMember, {transaction})
-        const currentMontant = Number(req.body.montant)
+        let newAdded;
+        let updating = false
+        if(req.body.id && req.body.id>0) {
+            updating = true
+            newAdded = await Engagement.findByPk(req.body.id, {transaction})
+            if(!newAdded) return res.status(404).send({message: "engagement non trouvé"})
+            await newAdded.update(data, {transaction})
+            await newAdded.setTranches([])
+        } else {
+        newAdded = await Engagement.create(data)
+        await newAdded.setCreator(selectedMember)
+        }
         const interet = selectedAssociation.interetCredit / 100
         const interetValue = interet * currentMontant
-        newAdded.montant = currentMontant
         newAdded.interetMontant = interetValue
         await newAdded.save({transaction})
         const totalMontant = currentMontant + interetValue
@@ -72,14 +86,16 @@ const addEngagement = async (req, res, next) => {
             }
 
         }
-        await transaction.commit()
+
         const justAdded = await Engagement.findByPk(newAdded.id, {
-            include: [{model: Member, as: 'Creator'}]
+            include: [{model: Member, as: 'Creator'}],
+            transaction
         })
-        const tokens = await getUsersTokens(selectedAssociation)
-        const selectedUser = await User.findByPk(selectedMember.userId)
+        const tokens = await getUsersTokens(selectedAssociation, {transaction})
+        const selectedUser = await User.findByPk(selectedMember.userId, {transaction})
         const filteredTokens = tokens.filter(token => token !== selectedUser.pushNotificationToken)
         sendPushNotification(`Un nouvel engagement a été ajouté dans ${selectedAssociation.nom} `, filteredTokens, "Nouvel engagement.", {notifType: 'engagement', associationId: selectedAssociation.id})
+        await transaction.commit()
         return res.status(200).send(justAdded)
     } catch (e) {
         await transaction.rollback()
@@ -327,14 +343,37 @@ const getSelectedEngagement = async (req, res, next) => {
 }
 
 const deleteEngagement = async (req, res, next) => {
+    const token = req.headers['x-access-token']
+    const connectedUser = decoder(token)
     try {
-        let selectedEngagement = await Engagement.findByPk(req.body.engagementId)
+        let selectedEngagement = await Engagement.findByPk(req.body.engagementId, {
+            include: [{model: Member, as: 'Creator'}, Tranche]
+        })
         if(!selectedEngagement)return res.status(404).send("Engagement introuvable.")
         if(selectedEngagement.accord === false && selectedEngagement.solde === 0) {
             await selectedEngagement.destroy()
-        } else if(selectedEngagement.accord === true && selectedEngagement.statut === 'pending' && selectedEngagement.solde === 0) {
-            await selectedEngagement.destroy()
-        }else {
+        } else if(selectedEngagement.accord === true) {
+            if(selectedEngagement.statut.toLowerCase() === 'pending' && selectedEngagement.solde === 0) {
+             await selectedEngagement.destroy()
+            }
+            if(selectedEngagement.statut.toLowerCase() === 'ended' && selectedEngagement.montant === selectedEngagement.solde) {
+                const votors = await selectedEngagement.getVotor()
+                const selectedAssociation = await Association.findByPk(selectedEngagement.Creator.associationId)
+                const data = {
+                    deleter: connectedUser,
+                    votors: votors,
+                    engagement: selectedEngagement,
+                    association: selectedAssociation
+                }
+                await Historique.create({
+                    histoType: 'engagement',
+                    description: "deleting engagement",
+                    histoData: [data]
+                })
+                await selectedEngagement.destroy()
+            }
+        }
+        else {
             return res.status(403).send("Impossible de supprimer cet engagement.")
         }
         return res.status(200).send({engagementId: req.body.engagementId})

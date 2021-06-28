@@ -339,8 +339,6 @@ const deleteMember = async (req, res, next) => {
             description: "deletion of association member",
             histoData: [data]
         })
-        // await selectedMember.setEngagements([])
-        // await selectedMember.setCotisations([])
         await selectedMember.destroy()
         return res.status(200).send({memberId: req.body.memberId, userId: selectedMember.userId})
     } catch (e) {
