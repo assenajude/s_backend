@@ -2,12 +2,11 @@ import express from 'express'
 import {verifyToken, isAdminOrModerator} from '../middlewares/authJWT.mjs'
 
 const router = express.Router()
-import {addNewMember,respondToAdhesionMessage,payCotisation,getMembersCotisations, getConnectedUserAssociations,
+import {respondToAdhesionMessage,payCotisation,getMembersCotisations, getConnectedUserAssociations,
     updateMemberData, getSelectedAssociationMembers, getMemberInfos,readInfo, sendMessageToAssociation,
     editImages, getConnectedMemberUser, leaveAssociation, deleteMember} from '../controllers/member.controller.mjs'
 
 router.post('/byAssociation',verifyToken, getSelectedAssociationMembers)
-router.post('/',[verifyToken, isAdminOrModerator], addNewMember)
 router.patch('/respondToAdhesionMessage',[verifyToken, isAdminOrModerator],respondToAdhesionMessage)
 router.patch('/updateOne',verifyToken, updateMemberData)
 router.post('/informations',verifyToken, getMemberInfos)

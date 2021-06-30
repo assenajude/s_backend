@@ -23,29 +23,6 @@ const getSelectedAssociationMembers = async (req, res, next) => {
     }
 }
 
-
-const addNewMember = async (req, res, next) => {
-    try {
-        let newMember = await Member.create({
-            statut: req.body.statut,
-            fonds: req.body.fonds,
-            avatar: req.body.avatar,
-            adhesionDate: req.body.adhesionDate?req.body.adhesionDate:new Date(),
-            backImage: req.body.backImage,
-            relation: 'member'
-        })
-        const idAssociation = req.body.associationId
-        const selectedAssociation = await Association.findByPk(idAssociation)
-        const selectedUser = await User.findByPk(req.body.userId)
-        await newMember.setUser(selectedUser)
-        await newMember.setAssociation(selectedAssociation)
-
-        return res.status(200).send(newMember)
-    } catch (e) {
-        next(e)
-    }
-}
-
 const respondToAdhesionMessage = async (req, res, next) => {
     try {
         let associatedMember = await Member.findOne({
@@ -348,7 +325,6 @@ const deleteMember = async (req, res, next) => {
 
 export {
     getSelectedAssociationMembers,
-    addNewMember,
     respondToAdhesionMessage,
     updateMemberData,
     getMemberInfos,
