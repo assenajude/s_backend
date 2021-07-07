@@ -85,4 +85,65 @@ const signin = async (req, res, next) => {
     }
 }
 
-export {signup, signin}
+const signinByPin = async (req, res, next) => {
+    try {
+        let currentUser;
+        const newToken = jwt.sign(req.body.codePin, process.env.JWT_SECRET)
+        currentUser = await User.findOne({
+            where: {
+                pinToken: newToken
+            }
+        })
+        if(!currentUser) return res.status(404).send({message: 'User non trouvé'})
+        let authorities = []
+        const memberRoles = await currentUser.getRoles();
+        for(let i=0; i<memberRoles.length; i++) {
+            authorities.push("ROLE_" + memberRoles[i].name.toUpperCase())
+        }
+        const selectedUser = await User.findByPk(currentUser.id, {
+            attributes: {exclude: ['password', 'pinToken']}
+        })
+        let token = jwt.sign({id: currentUser.id, username: selectedUser.username, email: selectedUser.email, roles: authorities}, process.env.JWT_SECRET, {
+            expiresIn: 86400
+        })
+
+        const data = selectedUser.dataValues
+        return res.status(201).send({
+           user: data,
+            roles: authorities,
+            accessToken: token
+        })
+    } catch (e) {
+        next(e.message)
+    }
+}
+
+
+const signupByPin = async (req, res, next) => {
+    try {
+        const pinToken = jwt.sign(req.body.codePin, process.env.JWT_SECRET)
+        let user = await User.create({
+            phone: req.body.phone,
+            pinToken: pinToken
+        })
+        const roles = req.body.roles
+        if(roles) {
+            const userRoles = await Role.findAll({
+                where: {
+                    name: {
+                        [Op.or]: roles
+                    }
+                }
+            })
+            await user.setRoles(userRoles)
+            return res.status(201).send("L'utilisateur a été enregistré avec succès")
+        } else {
+            await user.setRoles([1])
+            return res.status(201).send("L'utilisateur a été enregistré avec succès")
+        }
+    } catch (e) {
+        next(e)
+    }
+}
+
+export {signup, signin, signupByPin, signinByPin}

@@ -24,6 +24,20 @@ const checkDuplicateUsernameOrEmail = async (req, res, next) => {
     }
 }
 
+const checkDuplicatePhoneNumber = async (req, res, next) => {
+    try {
+        const userByPhone = await User.findOne({
+            where: {
+                phone: req.body.phone
+            }
+        })
+        if(userByPhone) return res.status(400).send({message: 'Echec! cet utilisateur existe deja.'})
+        next()
+    } catch (e) {
+        next(e.message)
+    }
+}
+
 const checkRolesExisted = (req, res, next) => {
     const roles = req.body.roles
     if(roles) {
@@ -36,4 +50,4 @@ const checkRolesExisted = (req, res, next) => {
     next()
 }
 
-export {checkDuplicateUsernameOrEmail, checkRolesExisted}
+export {checkDuplicateUsernameOrEmail, checkRolesExisted, checkDuplicatePhoneNumber}

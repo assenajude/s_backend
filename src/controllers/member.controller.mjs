@@ -190,14 +190,20 @@ const leaveAssociation = async (req, res, next) => {
 
 
 const editImages = async(req, res, next) => {
+    const avatarUrl = req.body.avatarUrl
+    const backImageUrl = req.body.backImageUrl
     try {
         let selectedMember = await Member.findByPk(req.body.memberId)
         if(!selectedMember) return res.status(200).send("membre non trouvé")
-        selectedMember.avatar = req.body.avatarUrl
-        selectedMember.backImage = req.body.backImageUrl
+        if(avatarUrl) selectedMember.avatar = req.body.avatarUrl
+        if(backImageUrl) selectedMember.backImage = req.body.backImageUrl
         await selectedMember.save()
-        const justUpdated = await Member.findByPk(selectedMember.id)
-        return res.status(200).send(justUpdated)
+        const selectedAssociation = await Association.findByPk(selectedMember.associationId)
+        const associationUsers = await selectedAssociation.getUsers({
+            attributes: {exclude: ['password']}
+        })
+        const currentUser = associationUsers.find(user => user.id === selectedMember.userId)
+        return res.status(200).send(currentUser)
     } catch (e) {
         next(e.message)
     }
