@@ -28,6 +28,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       defaultValue: 0
     },
+
+    penality: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    },
     frequenceCotisation: {
       type: DataTypes.STRING,
       defaultValue: 'mensuelle'

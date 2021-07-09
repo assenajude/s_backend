@@ -11,6 +11,9 @@ module.exports = {
       solde: {
         type: Sequelize.INTEGER,
       },
+      penalityMontant: {
+        type: Sequelize.INTEGER,
+      },
       libelle: {
         type: Sequelize.STRING
       },

@@ -24,25 +24,15 @@ const createAssociation = async (req, res, next) => {
         seuilSecurite: req.body.seuilSecurite,
         statut:req.body.statut?req.body.statut:'standard',
         interetCredit: req.body.interetCredit,
-        validationLenght: req.body.validatorsNumber>0?req.body.validatorsNumber: 0
+        validationLenght: req.body.validatorsNumber>0?req.body.validatorsNumber: 0,
+        penality: req.body.penality>0?req.body.penality: 0
     }
     try {
         let selectedAssociation;
         if(req.body.id && req.body.id !== null && req.body.id !== "") {
              selectedAssociation = await Association.findByPk(req.body.id)
             if(!selectedAssociation)return res.status(404).send("association non trouvée")
-            await selectedAssociation.update({
-                nom: req.body.nom,
-                avatar: req.body.avatar?req.body.avatar: '',
-                description: req.body.description,
-                cotisationMensuelle: req.body.cotisationMensuelle,
-                frequenceCotisation: req.body.frequenceCotisation,
-                fondInitial: req.body.fondInitial,
-                seuilSecurite: req.body.seuilSecurite,
-                statut:req.body.statut?req.body.statut:'standard',
-                interetCredit: req.body.interetCredit,
-                validationLenght: req.body.validatorsNumber>0?req.body.validatorsNumber: 0
-            })
+            await selectedAssociation.update(data)
         } else {
         selectedAssociation = await Association.create(data)
             const newCode = cryptoRandomString({length: 5, type: 'alphanumeric'});

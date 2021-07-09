@@ -18,6 +18,9 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       echeance: Sequelize.DATE,
+      checkedForPenality: {
+        type: Sequelize.BOOLEAN
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
@@ -25,7 +28,8 @@ module.exports = {
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE
-      }
+      },
+
     });
   },
   down: async (queryInterface, Sequelize) => {

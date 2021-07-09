@@ -38,6 +38,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       defaultValue: 0
     },
+    penalityMontant: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    },
     solde: {
       type: DataTypes.INTEGER,
       defaultValue: 0

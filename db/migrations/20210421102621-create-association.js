@@ -29,6 +29,9 @@ module.exports = {
       fondInitial: {
         type: Sequelize.INTEGER
       },
+      penality: {
+        type: Sequelize.INTEGER
+      },
       seuilSecurite: Sequelize.INTEGER,
       reglementInterieur: {
         type: Sequelize.STRING

@@ -24,7 +24,11 @@ module.exports = (sequelize, DataTypes) => {
     montant: DataTypes.INTEGER,
     libelle: DataTypes.STRING,
     solde: DataTypes.INTEGER,
-    echeance: DataTypes.DATE
+    echeance: DataTypes.DATE,
+    checkedForPenality: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    }
   }, {
     sequelize,
     modelName: 'tranche',
