@@ -176,26 +176,20 @@ const getEngagementsByAssociation = async (req, res, next) => {
         })
 
         for(let i=0; i< engagements.length; i++) {
-            console.log("checking engagements...........................................")
             let selectedEngagement = engagements[i];
             const engagementTranches = selectedEngagement.tranches;
             if(engagementTranches.length>0) {
                 for(let y=0; y<engagementTranches.length; y++) {
-                    console.log("checking tranches..............................")
                     let tranche = engagementTranches[y];
                     const newDate = Date.now()
                     const echeance = tranche.echeance.getTime()
-                    console.log('new date...................................',newDate);
-                    console.log('echeance..........................................',echeance);
                     if(newDate>echeance && tranche.montant !== tranche.solde && tranche.checkedForPenality === false) {
-                        console.log("treating penality.................................................")
                         let newPenalityMontant = selectedEngagement.penalityMontant
                         const trancheAssociation = await Association.findByPk(req.body.associationId)
                         const penalityMensuelle = trancheAssociation.penality
                         let newMontant = 0
                         let tranchePenalityMontant = 0
                         if(penalityMensuelle>0) {
-                            console.log("association has penality..................................")
                             const penalityPercent = penalityMensuelle / 100
                             tranchePenalityMontant = penalityPercent * tranche.montant
                             newMontant = tranche.montant + tranchePenalityMontant
@@ -207,7 +201,6 @@ const getEngagementsByAssociation = async (req, res, next) => {
                     }
                     await selectedEngagement.save()
                     await tranche.save()
-                    console.log("all saved...................................")
                 }
             }
 
