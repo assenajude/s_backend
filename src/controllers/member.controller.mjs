@@ -257,7 +257,7 @@ const payCotisation = async (req, res, next) => {
         await selectedUser.save({transaction})
         await selectedAssociation.save({transaction})
         const memberCotisState = await selectedMember.getCotisations({transaction})
-        const memberName = selectedUser.userName?selectedUser.userName: selectedUser.nom
+        const memberName = selectedUser.username?selectedUser.username: selectedUser.nom
         const tokens = await getUsersTokens(selectedAssociation, {transaction})
         if(tokens.length>0) {
             sendPushNotification(`${memberName} a payé une cotisation dans ${selectedAssociation.nom}`, tokens, 'Payement cotisation', {notifType: 'cotisation', associationId: selectedAssociation.id})
