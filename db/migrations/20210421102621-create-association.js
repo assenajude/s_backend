@@ -36,6 +36,9 @@ module.exports = {
       reglementInterieur: {
         type: Sequelize.STRING
       },
+      individualQuotite: {
+        type: Sequelize.INTEGER,
+      },
       interetCredit: {
         type: Sequelize.INTEGER
       },

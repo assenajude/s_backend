@@ -49,6 +49,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       defaultValue: 0
     },
+    individualQuotite: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    },
     reglementInterieur: DataTypes.STRING,
     interetCredit: {
       type: DataTypes.INTEGER,

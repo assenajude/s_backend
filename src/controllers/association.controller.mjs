@@ -25,7 +25,8 @@ const createAssociation = async (req, res, next) => {
         statut:req.body.statut?req.body.statut:'standard',
         interetCredit: req.body.interetCredit,
         validationLenght: req.body.validatorsNumber>0?req.body.validatorsNumber: 0,
-        penality: req.body.penality>0?req.body.penality: 0
+        penality: req.body.penality>0?req.body.penality: 0,
+        individualQuotite: req.body.individualQuotite>0?req.body.individualQuotite: 0
     }
     try {
         let selectedAssociation;

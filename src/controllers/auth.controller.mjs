@@ -91,7 +91,8 @@ const signinByPin = async (req, res, next) => {
         const newToken = jwt.sign(req.body.codePin, process.env.JWT_SECRET)
         currentUser = await User.findOne({
             where: {
-                pinToken: newToken
+                pinToken: newToken,
+                phone: req.body.phone
             }
         })
         if(!currentUser) return res.status(404).send({message: 'User non trouvé'})
