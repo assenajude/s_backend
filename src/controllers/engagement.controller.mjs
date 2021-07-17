@@ -92,9 +92,9 @@ const addEngagement = async (req, res, next) => {
             transaction
         })
         const tokens = await getUsersTokens(selectedAssociation, {transaction})
-        const selectedUser = await User.findByPk(selectedMember.userId, {transaction})
-        const filteredTokens = tokens.filter(token => token !== selectedUser.pushNotificationToken)
-        sendPushNotification(`Un nouvel engagement a été ajouté dans ${selectedAssociation.nom} `, filteredTokens, "Nouvel engagement.", {notifType: 'engagement', associationId: selectedAssociation.id})
+        if(tokens.length > 0) {
+            sendPushNotification(`Un nouvel engagement a été ajouté dans ${selectedAssociation.nom} `, tokens, "Nouvel engagement.", {notifType: 'engagement', associationId: selectedAssociation.id})
+        }
         await transaction.commit()
         return res.status(200).send(justAdded)
     } catch (e) {
@@ -114,7 +114,9 @@ const validEngagement = async (req, res,next) => {
         const selectedMember = await Member.findByPk(selectedEngagement.memberId)
         const selectedUser = await User.findByPk(selectedMember.userId)
         const userToken = selectedUser.pushNotificationToken
-        sendPushNotification(`Votre engagement '${selectedEngagement.libelle - selectedEngagement.montant}' a changé de status.`, [userToken], "changement status engagement.", {notifType: 'engagement', associationId: selectedMember.associationId})
+        if(userToken) {
+            sendPushNotification(`Votre engagement '${selectedEngagement.libelle - selectedEngagement.montant}' a changé de status.`, [userToken], "changement status engagement.", {notifType: 'engagement', associationId: selectedMember.associationId})
+        }
         return res.status(200).send(justUpdated)
     } catch (e) {
         next(e.message)
@@ -150,7 +152,9 @@ const updateEngagement = async (req, res, next) => {
             include: [{model: Member, as: 'Creator'}, Tranche]
         })
         const userToken = selectedUser.pushNotificationToken
-        sendPushNotification(`Votre engagement '${selected.libelle} - ${selected.montant}' a été mis à jour.`, [userToken], "Mis à jour engagement.", {notifType: 'engagement', associationId: selectedMember.associationId})
+        if(userToken) {
+            sendPushNotification(`Votre engagement '${selected.libelle} - ${selected.montant}' a été mis à jour.`, [userToken], "Mis à jour engagement.", {notifType: 'engagement', associationId: selectedMember.associationId})
+        }
         return res.status(200).send(justUpdated)
     } catch (e) {
         next(e.message)
@@ -273,7 +277,7 @@ const voteEngagement = async (req, res, next) => {
         const userToken = selectedUser.pushNotificationToken
         const userVotor = await User.findByPk(votor.userId, {transaction})
         const votorName = userVotor.username?userVotor.username : userVotor.prenom
-        if(selectedUser.id !== userVotor.id) {
+        if(selectedUser.id !== userVotor.id && userToken) {
             sendPushNotification(`${votorName} a voté votre engegement '${engagement.libelle} - ${engagement.montant}'.`, [userToken], "engagement voté", {notifType: 'engagement', associationId: selectedAssociation.id})
         }
         await transaction.commit()
@@ -351,9 +355,11 @@ const payTranche = async(req, res, next) => {
         await selectedUser.save({transaction})
         await selectedMember.save({transaction})
         await selectedAssociation.save({transaction})
+        const tokens = await getUsersTokens(selectedAssociation)
+        if(tokens.length>0) {
+            sendPushNotification(`Un payement d'engagement a été fait dans ${selectedAssociation.nom}`, tokens, "Payement tranche engagement", {notifType: 'engagement', associationId: selectedMember.associationId})
+        }
         await transaction.commit()
-        const tokens = getUsersTokens(selectedAssociation)
-        sendPushNotification(`Un payement d'engagement a été fait dans ${selectedAssociation.nom}`, tokens, "Payement tranche engagement", {notifType: 'engagement', associationId: selectedMember.associationId})
         return res.status(200).send(selectedTranche)
     } catch (e) {
         await transaction.rollback()

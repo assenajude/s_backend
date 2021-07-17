@@ -60,7 +60,9 @@ const respondToAdhesionMessage = async (req, res, next) => {
         } else {
             message = `Votre demande de quitter ${selectedAssociation.nom} a été acceptée.`
         }
-        sendPushNotification(message, tokenTab, `Reponse d'adhésion à ${selectedAssociation.nom} `, {notifType: "adhesion",statut: 'response', associationId: req.body.associationId})
+        if(tokenTab.length>0) {
+            sendPushNotification(message, tokenTab, `Reponse d'adhésion à ${selectedAssociation.nom} `, {notifType: "adhesion",statut: 'response', associationId: req.body.associationId})
+        }
         return res.status(200).send(currentMember)
     } catch (e) {
         next(e.message)
@@ -85,7 +87,10 @@ const updateMemberData = async (req, res, next) => {
         })
         const currentMember = associationMembers.find(member => member.id === selected.userId)
         const memberName = currentMember.username?currentMember.username : currentMember.nom
-        sendPushNotification(`Felicitation ${memberName}, vos infos ont été mises à jour avec succès dans ${memberAssociation.nom}.`, [currentMember.pushNotificationToken],"Mise à jour information personnel", {notifType: 'adhesion', associationId: memberAssociation.id})
+        const memberToken = currentMember.pushNotificationToken
+        if(memberToken) {
+            sendPushNotification(`Felicitation ${memberName}, vos infos ont été mises à jour avec succès dans ${memberAssociation.nom}.`, [memberToken],"Mise à jour information personnel", {notifType: 'adhesion', associationId: memberAssociation.id})
+        }
         return res.status(200).send(currentMember)
     } catch (e) {
         next(e.message)
@@ -151,9 +156,10 @@ const sendMessageToAssociation = async (req, res, next) => {
         })
         const userAssociationState = await connectedUser.getAssociations()
         const membersNotifTokens = await getUsersTokens(selectedAssociation)
-        const filteredTokens = membersNotifTokens.filter(token => token !== connectedUser.pushNotificationToken)
-        const userName = connectedUser.username?connectedUser.username : connectedUser.nom
-        sendPushNotification(`${userName} souhaiterais adhérer ${selectedAssociation.nom}.`, filteredTokens, `Demande d'adhesion à ${selectedAssociation.nom}`, {notifType:'adhesion', statut: 'sending', associationId: selectedAssociation.id})
+        if(membersNotifTokens.length > 0) {
+            const userName = connectedUser.username?connectedUser.username : connectedUser.nom?connectedUser.nom: connectedUser.email?connectedUser.email: connectedUser.phone
+            sendPushNotification(`${userName} souhaiterais adhérer ${selectedAssociation.nom}.`, membersNotifTokens, `Demande d'adhesion à ${selectedAssociation.nom}`, {notifType:'adhesion', statut: 'sending', associationId: selectedAssociation.id})
+        }
         return res.status(200).send(userAssociationState)
     } catch (e) {
         next(e)
@@ -178,9 +184,10 @@ const leaveAssociation = async (req, res, next) => {
         })
         const currentMember = associationMembers.find(item => item.id === req.body.userId)
         const membersNotifTokens = await getUsersTokens(selectedAssociation)
-        const filteredTokens = membersNotifTokens.filter(token => token !== connectedUser.pushNotificationToken)
         const userName = connectedUser.username?connectedUser.username : connectedUser.nom
-        sendPushNotification(`${userName} souhaiterais quitter ${selectedAssociation.nom}.`, filteredTokens, `Demande de quitter ${selectedAssociation.nom}`, {notifType:'adhesion', statut: 'leaving', associationId: selectedAssociation.id})
+        if(membersNotifTokens.length>0) {
+            sendPushNotification(`${userName} souhaiterais quitter ${selectedAssociation.nom}.`, membersNotifTokens, `Demande de quitter ${selectedAssociation.nom}`, {notifType:'adhesion', statut: 'leaving', associationId: selectedAssociation.id})
+        }
         return res.status(200).send(currentMember)
     } catch (e) {
         next(e)
@@ -252,8 +259,9 @@ const payCotisation = async (req, res, next) => {
         const memberCotisState = await selectedMember.getCotisations({transaction})
         const memberName = selectedUser.userName?selectedUser.userName: selectedUser.nom
         const tokens = await getUsersTokens(selectedAssociation, {transaction})
-        const filteredTokens = tokens.filter(token => token !== selectedUser.pushNotificationToken)
-        sendPushNotification(`${memberName} a payé une cotisation dans ${selectedAssociation.nom}`, filteredTokens, 'Payement cotisation', {notifType: 'cotisation', associationId: selectedAssociation.id})
+        if(tokens.length>0) {
+            sendPushNotification(`${memberName} a payé une cotisation dans ${selectedAssociation.nom}`, tokens, 'Payement cotisation', {notifType: 'cotisation', associationId: selectedAssociation.id})
+        }
        const data = {
            memberId: selectedMember.id, cotisations: memberCotisState
        }

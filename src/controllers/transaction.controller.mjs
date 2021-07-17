@@ -3,7 +3,7 @@ import decoder from 'jwt-decode'
 import genCode from 'crypto-random-string'
 const User = db.user
 const Transaction = db.transaction
-import {sendPushNotification} from '../utilities/pushNotification.mjs'
+import {sendPushNotification, getUsersTokens} from '../utilities/pushNotification.mjs'
 import {isAdminUser} from '../utilities/adminRoles.mjs'
 
 const addTransaction = async (req, res, next) => {
@@ -39,7 +39,9 @@ const addTransaction = async (req, res, next) => {
             })
         }
         const usersTokens = adminUsers.map(user => user.pushNotificationToken)
-        sendPushNotification(`${justAdded.number} nouvelle transacton en cours`, usersTokens, newTransaction.typeTransac, {notifType: 'transaction', mode: newTransaction.typeTransac, transactionId: newTransaction.id})
+        if(usersTokens.length>0) {
+            sendPushNotification(`${justAdded.number} nouvelle transacton en cours`, usersTokens, newTransaction.typeTransac, {notifType: 'transaction', mode: newTransaction.typeTransac, transactionId: newTransaction.id})
+        }
         return res.status(200).send(justAdded)
     } catch (e) {
         await transaction.rollback()
@@ -80,7 +82,9 @@ const updateTransaction = async (req, res, next) => {
             include: [{model: User, attributes: {exclude: ['password']}}]
         })
         const userToken = selectedUser.pushNotificationToken
-        sendPushNotification(`Votre transaction ${justUpdated.number} a été traitée.`, [userToken], 'Transaction traitée.', {notifType: 'Transaction', mode: selectedTransaction.typeTransac, transactionId: selectedTransaction.id})
+        if(userToken) {
+            sendPushNotification(`Votre transaction ${justUpdated.number} a été traitée.`, [userToken], 'Transaction traitée.', {notifType: 'Transaction', mode: selectedTransaction.typeTransac, transactionId: selectedTransaction.id})
+        }
         return res.status(200).send(justUpdated)
     } catch (e) {
         await transaction.rollback()

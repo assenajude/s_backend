@@ -1,5 +1,5 @@
 import db from '../../db/models/index.js'
-import {sendPushNotification} from "../utilities/pushNotification.mjs";
+import {sendPushNotification, getUsersTokens} from "../utilities/pushNotification.mjs";
 const Member = db.member
 const Association = db.association
 const Information = db.information
@@ -15,22 +15,10 @@ const addInfo = async (req, res, next) => {
         const selectedAssociation = await Association.findByPk(req.body.associationId)
         let newInfo = await Information.create(data)
         await newInfo.setAssociation(selectedAssociation)
-        const assoUsers = await selectedAssociation.getUsers()
-        const currentMembers = assoUsers.filter(item => item.member.relation.toLowerCase() !== 'ondemand')
-        const members = currentMembers.map(item => item.member)
-        for(let i=0; i < members.length; i++) {
-            const currentMember = members[i];
-            (async function (newMember) {
-                let selectedMember = await Member.findByPk(newMember.id)
-                await selectedMember.addInformation(newInfo, {
-                    through: {
-                        isRead: false
-                    }
-                })
-            })(currentMember)
+        const membersToken = await getUsersTokens(selectedAssociation)
+        if(membersToken.length>0) {
+            sendPushNotification("Nouvelle information dans votre association", membersToken, "Information", {notifType: "information", associationId: req.body.associationId})
         }
-        const membersToken = assoUsers.map(user => user.pushNotificationToken)
-        sendPushNotification("Nouvelle information dans votre association", membersToken, "Information", {notifType: "information", associationId: req.body.associationId})
         return res.status(201).send(newInfo)
     } catch (e) {
         next(e.message)

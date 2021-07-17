@@ -127,7 +127,9 @@ const updateReglement = async (req, res, next) => {
         selectedAssociation.reglementInterieur = req.body.reglementUrl
         await selectedAssociation.save()
         const tokens = await getUsersTokens(selectedAssociation)
-        sendPushNotification("Reglement interieur mis à jour.", tokens, "Mis à jour reglement.", {notifType:'reglement', associationId: selectedAssociation.id})
+        if(tokens.length>0) {
+            sendPushNotification("Reglement interieur mis à jour.", tokens, "Mis à jour reglement.", {notifType:'reglement', associationId: selectedAssociation.id})
+        }
         return res.status(200).send(selectedAssociation)
     } catch (e) {
         next(e)
