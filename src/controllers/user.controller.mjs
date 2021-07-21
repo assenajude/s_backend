@@ -66,7 +66,7 @@ const getAllUser = async (req, res, next) => {
     try {
         let allUser = []
         if(isAdmin) {
-        allUser = await User.findAll({
+            allUser = await User.findAll({
             attributes: {exclude: ['password']}
         })
         }
@@ -162,6 +162,17 @@ const changeCredentials = async (req,res, next) => {
     }
 }
 
+const deleteUser = async (req, res, next) => {
+    try {
+        let selectedUser = await User.findByPk(req.body.userId)
+        if(!selectedUser)return res.status(404).send("Utilisateur non trouvé")
+        await selectedUser.destroy()
+        return res.status(200).send({userId: req.body.userId})
+    } catch (e) {
+        next(e.message)
+    }
+}
+
 
 export {
     editUserInfo,
@@ -171,5 +182,6 @@ export {
     getUserData,
     updatePushNotifToken,
     resetCredentials,
-    changeCredentials
+    changeCredentials,
+    deleteUser
 }
