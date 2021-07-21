@@ -166,6 +166,7 @@ const deleteUser = async (req, res, next) => {
     try {
         let selectedUser = await User.findByPk(req.body.userId)
         if(!selectedUser)return res.status(404).send("Utilisateur non trouvé")
+        if(selectedUser.wallet>0) return res.status(401).send({message: "Vous ne pouvez pas supprimer cet utilisateur."})
         await selectedUser.destroy()
         return res.status(200).send({userId: req.body.userId})
     } catch (e) {
