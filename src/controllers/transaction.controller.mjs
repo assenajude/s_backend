@@ -117,8 +117,42 @@ const getUserTransaction = async (req, res, next) => {
     }
 }
 
+const deleteOneTransaction = async (req, res, next) => {
+    try {
+        let selectedTransaction = await Transaction.findByPk(req.body.transactionId)
+        if(!selectedTransaction) return res.status(404).send({message: "transaction non trouvée"})
+        await selectedTransaction.destroy()
+        return res.status(200).send({transactionId: req.body.transactionId})
+    } catch (e) {
+        next(e)
+    }
+}
+
+const cancelTransaction = async (req, res, next) => {
+    try {
+        let selectedTransaction = await Transaction.findByPk(req.body.id)
+        if(!selectedTransaction) return res.status(404).send({message: "Transaction non trouvée"})
+        let selectedUser = await User.findByPk(req.body.userId)
+        if(!selectedUser) return res.status(404).send({message: "creator non trouvé"})
+        if(selectedTransaction.statut.toLowerCase() === 'succeeded') {
+            selectedUser.wallet -= req.body.montant
+            selectedTransaction.statut = "failed"
+        }
+        await selectedTransaction.save()
+        await selectedUser.save()
+        const justUpdated = await Transaction.findByPk(req.body.id, {
+            include: [{model: User, attributes: {exclude: ['password']}}]
+        })
+        return res.status(200).send(justUpdated)
+    } catch (e) {
+        next(e)
+    }
+}
+
 export {
     addTransaction,
     updateTransaction,
-    getUserTransaction
+    getUserTransaction,
+    deleteOneTransaction,
+    cancelTransaction
 }
