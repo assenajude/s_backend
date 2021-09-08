@@ -53,6 +53,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       defaultValue: 0
     },
+    isValid: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
     reglementInterieur: DataTypes.STRING,
     interetCredit: {
       type: DataTypes.INTEGER,

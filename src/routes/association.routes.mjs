@@ -4,7 +4,7 @@ import {createAssociation, getAllAssociations,editMemberRoles,
     getconnectedMemberRoles, updateAvatar, getSelectedAssociation, updateReglement, deleteOne} from '../controllers/association.controller.mjs'
 const router = express.Router()
 
-router.post('/', [verifyToken, isAdmin],createAssociation)
+router.post('/', verifyToken,createAssociation)
 router.get('/',getAllAssociations)
 router.patch('/editRoles',[verifyToken, isAdmin], editMemberRoles)
 router.post('/members/roles',verifyToken, getconnectedMemberRoles)

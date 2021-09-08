@@ -29,7 +29,8 @@ const errorHandler = error => {
             process.exit(1);
             break;
         case 'EADDRINUSE':
-            logger.error(bind + ' is already in use.');
+            // logger.log(`${bind} is already in user`)
+            console.error(bind + ' is already in use.');
             process.exit(1);
             break;
         default:

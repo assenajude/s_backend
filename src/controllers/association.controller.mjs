@@ -9,11 +9,11 @@ const Information = db.information
 const Engagement = db.engagement
 const Historique = db.historique
 const Member = db.member
+const User = db.user
 const Role = db.role
 
 
 const createAssociation = async (req, res, next) => {
-
     const data = {
         nom: req.body.nom,
         avatar: req.body.avatar?req.body.avatar: '',
@@ -26,11 +26,12 @@ const createAssociation = async (req, res, next) => {
         interetCredit: req.body.interetCredit,
         validationLenght: req.body.validatorsNumber>0?req.body.validatorsNumber: 0,
         penality: req.body.penality>0?req.body.penality: 0,
-        individualQuotite: req.body.individualQuotite>0?req.body.individualQuotite: 0
+        individualQuotite: req.body.individualQuotite>0?req.body.individualQuotite: 0,
+        isValid: req.body.validation
     }
     try {
         let selectedAssociation;
-        if(req.body.id && req.body.id !== null && req.body.id !== "") {
+        if(req.body.id) {
              selectedAssociation = await Association.findByPk(req.body.id)
             if(!selectedAssociation)return res.status(404).send("association non trouvée")
             await selectedAssociation.update(data)
@@ -39,6 +40,26 @@ const createAssociation = async (req, res, next) => {
             const newCode = cryptoRandomString({length: 5, type: 'alphanumeric'});
         selectedAssociation.code = newCode
         await selectedAssociation.save()
+            const creatorUser = await User.findByPk(req.body.creatorId)
+            if(!creatorUser) return res.status(404).send("utilisateur non trouvé")
+            await selectedAssociation.addUser(creatorUser, {
+                through: {
+                    relation: 'member',
+                    statut: 'moderator'
+                }
+            })
+            let creatorMember = await Member.findOne({
+                where: {
+                    userId: creatorUser.id
+                }
+            })
+
+            const memberRoles = await Role.findAll({
+                where: {
+                    name: 'moderator'
+                }
+            })
+            await creatorMember.setRoles(memberRoles)
         }
         return res.status(201).send(selectedAssociation)
     } catch (e) {
