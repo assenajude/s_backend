@@ -19,7 +19,7 @@ const getSelectedAssociationMembers = async (req, res, next) => {
         })
         return res.status(200).send(members)
     } catch (e) {
-        next(e.message)
+        next(e)
     }
 }
 
@@ -65,7 +65,7 @@ const respondToAdhesionMessage = async (req, res, next) => {
         }
         return res.status(200).send(currentMember)
     } catch (e) {
-        next(e.message)
+        next(e)
     }
 }
 
@@ -93,7 +93,7 @@ const updateMemberData = async (req, res, next) => {
         }
         return res.status(200).send(currentMember)
     } catch (e) {
-        next(e.message)
+        next(e)
     }
 }
 
@@ -120,7 +120,7 @@ const getMemberInfos = async (req, res, next) => {
         const selectedInfos = await selectedMember.getInformation()
         return res.status(200).send(selectedInfos)
     } catch (e) {
-        next(e.message)
+        next(e)
     }
 }
 
@@ -246,9 +246,9 @@ const payCotisation = async (req, res, next) => {
         if(montantToPay >= selectedCotisation.montant) {
             newPayed.isPayed = true
         }
-        if(selectedCotisation.typeCotisation.toLowerCase() === 'mensuel') {
+        /*if(selectedCotisation.typeCotisation.toLowerCase() === 'mensuel') {
             selectedMember.fonds += montantToPay
-        }
+        }*/
         selectedAssociation.fondInitial += montantToPay
         selectedUser.wallet -= montantToPay
 
@@ -269,7 +269,7 @@ const payCotisation = async (req, res, next) => {
         return res.status(200).send(data)
     } catch (e) {
         await transaction.rollback()
-        next(e.message)
+        next(e)
     }
 }
 
@@ -289,7 +289,7 @@ const getMembersCotisations = async (req, res, next) => {
         }
         return res.status(200).send(membersCotisation)
     } catch (e) {
-        next(e.message)
+        next(e)
     }
 }
 

@@ -254,8 +254,8 @@ const voteEngagement = async (req, res, next) => {
                 } else {
                     selectedAssociation.fondInitial -= engagement.montant
                     engagement.statut = 'paying'
-                    selectedUser.wallet += engagement.montant
-                    selectedMember.fonds -= engagement.montant
+                    // selectedUser.wallet += engagement.montant
+                    selectedMember.fonds += engagement.montant
                 }
             } else {
                 engagement.accord = false

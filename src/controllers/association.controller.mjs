@@ -45,7 +45,8 @@ const createAssociation = async (req, res, next) => {
             await selectedAssociation.addUser(creatorUser, {
                 through: {
                     relation: 'member',
-                    statut: 'moderator'
+                    statut: 'moderator',
+                    adhesionDate: Date.now()
                 }
             })
             let creatorMember = await Member.findOne({
