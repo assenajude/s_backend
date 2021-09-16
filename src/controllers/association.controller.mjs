@@ -18,6 +18,7 @@ const createAssociation = async (req, res, next) => {
         nom: req.body.nom,
         avatar: req.body.avatar?req.body.avatar: '',
         description: req.body.description,
+        telAdmin: req.body.telAdmin,
         cotisationMensuelle: req.body.cotisationMensuelle,
         frequenceCotisation: req.body.frequenceCotisation,
         fondInitial: req.body.fondInitial,

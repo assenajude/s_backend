@@ -11,7 +11,13 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-
+      member.hasMany(models.transaction,{
+        foreignKey: 'creatorId',
+        constraints: false,
+        scope: {
+          creatorType: 'member'
+        }
+      })
       member.belongsToMany(models.cotisation, {
         through: models.member_cotisation
       })

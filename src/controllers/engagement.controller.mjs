@@ -340,20 +340,16 @@ const payTranche = async(req, res, next) => {
         const currentProgress = montantToPay/totalMontant
         const convertProgress = currentProgress.toFixed(1)
         selectedEngagement.progression += Number(convertProgress)
-        let memberFundToAdded = montantToPay
         if(selectedEngagement.solde === totalMontant) {
             selectedEngagement.progression = 1
            selectedEngagement.statut = 'ended'
-            memberFundToAdded = montantToPay - selectedEngagement.interetMontant
         }
         let selectedMember = await Member.findByPk(selectedEngagement.creatorId, {transaction})
-        selectedMember.fonds += memberFundToAdded
         let selectedAssociation = await Association.findByPk(selectedMember.associationId, {transaction})
         selectedAssociation.fondInitial += montantToPay
         await selectedEngagement.save({transaction})
         await selectedTranche.save({transaction})
         await selectedUser.save({transaction})
-        await selectedMember.save({transaction})
         await selectedAssociation.save({transaction})
         const tokens = await getUsersTokens(selectedAssociation)
         if(tokens.length>0) {

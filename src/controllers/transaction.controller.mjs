@@ -1,7 +1,9 @@
 import db from '../../db/models/index.js'
 import decoder from 'jwt-decode'
 import genCode from 'crypto-random-string'
+const Op = db.Sequelize.Op
 const User = db.user
+const Member = db.member
 const Transaction = db.transaction
 import {sendPushNotification, getUsersTokens} from '../utilities/pushNotification.mjs'
 import {isAdminUser} from '../utilities/adminRoles.mjs'
@@ -10,25 +12,40 @@ const addTransaction = async (req, res, next) => {
     const data = {
         libelle: req.body.libelle,
         montant: req.body.montant,
-        reseau: req.body.reseau,
+        reseau: req.body.reseau?req.body.reseau : 'sabbat',
         typeTransac: req.body.type,
         numero: req.body.numero,
+        mode: req.body.mode,
         statut: req.body.statut?req.body.statut : 'processing'
     }
     const transaction =await db.sequelize.transaction()
     try {
-        const selectedUser = await User.findByPk(req.body.userId, {transaction})
-        if(!selectedUser) return res.status(404).send("Utilisateur non trouvé")
-        let newTransaction = await Transaction.create(data, {transaction})
+        let creator;
+        if(req.body.creatorType === 'member') {
+            creator = await Member.findByPk(req.body.creatorId, {transaction})
+
+        }else {
+            creator = await User.findByPk(req.body.creatorId, {transaction})
+        }
+        if(!creator) return res.status(404).send("Utilisateur ou membre non trouvé")
+        let newTransaction = await creator.createTransaction(data, {transaction})
         const transactionNumber = genCode({length: 8, type: 'numeric'})
         newTransaction.number = `T-${transactionNumber}`
-        newTransaction.setUser(selectedUser)
-        await newTransaction.save({transaction})
-        await transaction.commit()
-        const justAdded = await Transaction.findByPk(newTransaction.id, {
-            include: [{model:User, attributes: {exclude: ['password']}}]
-        })
+        if(req.body.mode === 'interne') {
+            let selectedUser = await User.findByPk(creator.userId, {transaction})
+            if(!selectedUser) return res.status(404).send({message: "utilisateur non trouvé"})
+            creator.fonds -= req.body.montant
+            selectedUser.wallet += req.body.montant
+            await creator.save({transaction})
+            await selectedUser.save({transaction})
+            newTransaction.statut = 'succeeded'
+        }
 
+        await newTransaction.save({transaction})
+
+        const justAdded = await Transaction.findByPk(newTransaction.id, {
+            include: [User, Member], transaction
+        })
         const allUsers = await User.findAll()
         const adminUsers = []
         for(let i=0; i<allUsers.length; i++) {
@@ -42,6 +59,7 @@ const addTransaction = async (req, res, next) => {
         if(usersTokens.length>0) {
             sendPushNotification(`${justAdded.number} nouvelle transacton en cours`, usersTokens, newTransaction.typeTransac, {notifType: 'transaction', mode: newTransaction.typeTransac, transactionId: newTransaction.id})
         }
+        await transaction.commit()
         return res.status(200).send(justAdded)
     } catch (e) {
         await transaction.rollback()
@@ -106,9 +124,13 @@ const getUserTransaction = async (req, res, next) => {
         } else {
             userTransactions = await Transaction.findAll({
                 where: {
-                    userId: idUser
+                    [Op.or] : [
+                        {userId: idUser},
+                        {creatorId: req.body.creatorId}
+                    ],
+
                 },
-                include: [{model: User, attributes: {exclude: ['password']}}]
+                include: [{model: User, attributes: {exclude: ['password']}}, Member]
             })
         }
         return res.status(200).send(userTransactions)

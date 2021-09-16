@@ -57,6 +57,9 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
+    telAdmin: {
+      type: DataTypes.STRING
+    },
     reglementInterieur: DataTypes.STRING,
     interetCredit: {
       type: DataTypes.INTEGER,

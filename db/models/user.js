@@ -17,7 +17,13 @@ module.exports = (sequelize, DataTypes) => {
       user.belongsToMany(models.role, {
         through: 'user_roles'
       })
-      user.hasMany(models.transaction)
+      user.hasMany(models.transaction,{
+        foreignKey: 'creatorId',
+        constraints: false,
+        scope: {
+          creatorType: 'user'
+        }
+      })
     }
   };
   user.init({
