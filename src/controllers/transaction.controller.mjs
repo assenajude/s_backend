@@ -34,15 +34,16 @@ const addTransaction = async (req, res, next) => {
         if(req.body.mode === 'interne') {
             let selectedUser = await User.findByPk(creator.userId, {transaction})
             if(!selectedUser) return res.status(404).send({message: "utilisateur non trouvé"})
-            creator.fonds -= req.body.montant
             selectedUser.wallet += req.body.montant
-            await creator.save({transaction})
             await selectedUser.save({transaction})
             newTransaction.statut = 'succeeded'
         }
 
         await newTransaction.save({transaction})
-
+        if(req.body.creatorType === 'member' && req.body.type==='retrait') {
+            creator.fonds -= req.body.montant
+            await creator.save({transaction})
+        }
         const justAdded = await Transaction.findByPk(newTransaction.id, {
             include: [User, Member], transaction
         })
@@ -119,7 +120,7 @@ const getUserTransaction = async (req, res, next) => {
         let userTransactions = []
         if(isAdmin) {
         userTransactions = await Transaction.findAll({
-            include: [{model: User, attributes: {exclude: ['password']}}]
+            include: [User, Member]
         })
         } else {
             userTransactions = await Transaction.findAll({
@@ -130,7 +131,7 @@ const getUserTransaction = async (req, res, next) => {
                     ],
 
                 },
-                include: [{model: User, attributes: {exclude: ['password']}}, Member]
+                include: [User, Member]
             })
         }
         return res.status(200).send(userTransactions)

@@ -31,6 +31,7 @@ module.exports = (sequelize, DataTypes) => {
       })
     }
   };
+
   transaction.init({
     libelle: DataTypes.STRING,
     number: DataTypes.STRING,
@@ -51,6 +52,7 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'transaction',
   });
+
   transaction.addHook("afterFind", findResult => {
     if (!Array.isArray(findResult)) findResult = [findResult];
     for (const instance of findResult) {
@@ -60,11 +62,12 @@ module.exports = (sequelize, DataTypes) => {
         instance.creator = instance.member;
       }
       // To prevent mistakes:
-      delete instance.user;
+   /*   delete instance.user;
       delete instance.dataValues.user;
       delete instance.member;
-      delete instance.dataValues.member;
+      delete instance.dataValues.member;*/
     }
   });
+
   return transaction;
 };
