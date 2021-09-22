@@ -40,8 +40,13 @@ db.sequelize.sync().then(() => {
     logger.log(error)});
 import {routes} from './src/startup/routes.mjs'
 routes(app)
-import {errorHandler} from './src/middlewares/error.handler.mjs'
-app.use(errorHandler)
 prod(app)
+app.use(function (err, req, res, next) {
+    let statusCode
+    if(!err.statusCode) statusCode = 500
+    else statusCode = err.statusCode
+    logger.log(err.message?err.message : err.stack)
+    res.status(statusCode).send({'error': err})
+})
 
 export {app}
